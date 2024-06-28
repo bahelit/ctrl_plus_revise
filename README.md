@@ -57,10 +57,11 @@ go run .
 ## Developing
 To develop the project, you need to have the following tools installed on your machine:
 - [Go](https://golang.org/dl/)
+- [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
 - [Docker](https://docs.docker.com/get-docker/)
 
 #### The Stringer tool
-This project uses the [stringer tool](https://pkg.go.dev/golang.org/x/tools/cmd/stringer), this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
+This project uses the stringer tool, this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
 ```bash
 go install golang.org/x/tools/cmd/stringer@latest
 stringer -linecomment -type=PromptMsg
