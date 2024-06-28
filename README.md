@@ -55,12 +55,9 @@ go run .
 ```
 
 ## Developing
-
-The backend part is located in the `*.go` files in your project folder.
-
-The `./templates` folder contains Templ templates that you can use in your frontend part. Also, the `./assets` folder contains the `styles.scss` (main styles) and `scripts.js` (main scripts) files.
-
-The `./static` folder contains all the static files: icons, images, PWA (Progressive Web App) manifest and other built/minified assets.
+To develop the project, you need to have the following tools installed on your machine:
+- [Go](https://golang.org/dl/)
+- [Docker](https://docs.docker.com/get-docker/)k
 
 #### The Stringer tool
 This project uses the [stringer tool](https://pkg.go.dev/golang.org/x/tools/cmd/stringer), this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
