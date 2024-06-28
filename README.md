@@ -67,17 +67,6 @@ go install golang.org/x/tools/cmd/stringer@latest
 stringer -linecomment -type=PromptMsg
 ```
 
-## Deploying
-
-All deploy settings are located in the `Dockerfile` and `docker-compose.yml` files in the project root folder.
-
-To deploy from the git repo, follow these steps:
-
-1. Go to your hosting/cloud provider and create a new VDS/VPS.
-2. Update all OS packages on the server and install Docker, Docker Compose and Git packages.
-3. Use `git clone` command to clone the repository with your project to the server and navigate to its folder.
-4. Run the `docker-compose up` command to start your project on your server.> ❗️ Don't forget to generate Go files from `*.templ` templates before run the `docker-compose up` command.
-
 
 ## About Ctrl+Revise
 
