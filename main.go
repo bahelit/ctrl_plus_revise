@@ -45,7 +45,7 @@ func main() {
 	if err != nil {
 		slog.Warn("Failed to load icon", "error", err)
 	}
-	guiApp = app.NewWithID("com.bahelit.ctrl_plus_revise")
+	guiApp = app.NewWithID("Ctrl+Revise")
 	guiApp.SetIcon(icon)
 	// Prepare the system tray
 	sysTray := setupSysTray(guiApp)

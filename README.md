@@ -4,7 +4,12 @@
 - [Starting Ctrl+Revise](#starting-ctrlrevise)
 - [Developing Ctrl+Revise](#developing-ctrlrevise)
 - [Deploying Ctrl+Revise](#deploying-ctrlrevise)
-- [About Ctrl+Revise](#about-ctrlrevise).
+- [About Ctrl+Revise](#about-ctrlrevise)
+
+<img src="images/Screenshot_Main_Window.png" alt="Main_Window" style="display:block;margin:0 auto;">
+
+<img src="images/Screenshot_Keyboard_Shortcuts.png" alt="Shortcuts_Window" style="display:block;margin:0 auto;">
+
 
 ## Overview
 

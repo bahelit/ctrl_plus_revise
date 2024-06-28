@@ -19,6 +19,7 @@ const (
 
 func setupSysTray(guiApp fyne.App) fyne.Window {
 	sysTray := guiApp.NewWindow("Ctrl+Revise AI Text Generator")
+	sysTray.SetTitle("Ctrl+Revise AI Text Generator")
 
 	// System tray menu
 	if desk, ok := guiApp.(desktop.App); ok {
@@ -29,6 +30,7 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 			fyne.NewMenuItem("Keyboard Shortcuts", func() {
 				showShortcuts(guiApp)
 			}),
+			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() {
 				showAbout(guiApp)
 			}),
