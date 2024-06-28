@@ -1,13 +1,10 @@
 # Ctrl+Revise
 
-This README file contains all the necessary information about:
-
 - [Project overview](#project-overview)
 - [Starting Ctrl+Revise](#starting-ctrlrevise)
 - [Developing Ctrl+Revise](#developing-ctrlrevise)
 - [Deploying Ctrl+Revise](#deploying-ctrlrevise)
-
-And some words [about Ctrl+Revise](#about-ctrlrevise).
+- [About Ctrl+Revise](#about-ctrlrevise).
 
 ## Overview
 
@@ -15,6 +12,8 @@ Ctrl+Revise is locally-run artificial intelligence (AI) tool designed to elevate
 
 
 Additionally, Ctrl+Revise features customizable keyboard shortcuts for streamlined workflow, allowing you to focus on the creative process. This powerful tool is compatible with a range of platforms, including Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
+
+None of the text you copy is stored or sent to any server. The AI model runs locally on your machine, ensuring your privacy and data security.
 
 Frontend:
 - GUI toolkit: `fyne`
