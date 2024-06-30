@@ -18,18 +18,7 @@ This tool is compatible Windows, Linux, and macOS, supporting AMD, Nvidia, and A
 
 None of the text you copy is stored or sent to any server. The AI model runs locally on your machine, ensuring your privacy and data security.
 
-Frontend:
-- GUI toolkit: `fyne`
-
-Learn more about the Fyne Toolkit at [fyne.io](https://fyne.io/).
-
-Tools:
-- Linter: `golangci-lint`
-
-Learn more about the GolangCI-Lint at [golangci-lint.run](https://golangci-lint.run/).
-
 ## Starting
-
 
 Dependencies:
 
@@ -61,7 +50,6 @@ docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 114
 ```
 
 
-
 Ctrl+Revise will attempt to connect to Ollama on startup. If it is not running it will attempt to start Ollama using Docker, first looking to see it the image is already downloaded, and if not, it will pull the latest image and start the container. Currently, the container image it pulls down is `ollama/ollama:rocm` which provides support for AMD GPUs.
 
 To start the project, use the `go run` command in your terminal or the make recipe `make run` from the project's root directory.
@@ -75,8 +63,10 @@ go run .
 
 To develop the project, you need to have the following tools installed on your machine:
 - [Go](https://golang.org/dl/)
-- [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
-- [Docker](https://docs.docker.com/get-docker/)
+- [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer) (optional, runs from make recipe)
+- [golangci-lint](https://golangci-lint.run/) (optional, runs from make recipe)
+
+This project uses the Fyne Toolkit, learn more about the Fyne Toolkit at [fyne.io](https://fyne.io/).
 
 #### The Stringer tool
 This project uses the stringer tool, this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
@@ -84,13 +74,12 @@ This project uses the stringer tool, this will generate a `<type>_string.go` fil
 go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=PromptMsg
 ```
 
-
 ## Screenshots
 
 ![Main Menu](images/Screenshot_Main_Window.png)
 
 ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png)
 
-## About Ctrl+Revise
+## About
 
 The [**Ctrl+Revise**](https://ctrlplusrevise.com) is in early development and there are many features that are planned to be added. This project is open-source and you can contribute to it by submitting a pull request.

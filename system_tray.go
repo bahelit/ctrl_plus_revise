@@ -196,7 +196,7 @@ func showAbout(guiApp fyne.App) {
 	aboutText := widget.NewLabel("Ctrl+Revise is here to help you unleash your inner wordsmith!\n" +
 		"This nifty tool uses clever local AI agents to generate text based on what you copy and paste.\n\n" +
 		"Need some professional flair? Got a friendly tone in mind?\nOr maybe you just want to make sure your writing is grammatically correct?\n" +
-		"Llama Launcher's got you covered. Simply copy the generated text right onto your clipboard, and you're good to go!")
+		"Simply highlight the text you want to fix or ask about then press keyboard shortcut, and you're good to go!")
 
 	aboutWindow := container.NewVBox(
 		aboutTitle,
