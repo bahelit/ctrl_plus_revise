@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"fyne.io/fyne/v2/layout"
-	"log/slog"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"log/slog"
 )
 
 const (
@@ -291,21 +289,9 @@ func askQuestion(guiApp fyne.App) {
 	question.Show()
 }
 
-func changedPromptPopUp() {
-	w := guiApp.NewWindow("Ctrl+Revise")
-	w.CenterOnScreen()
-	hello := widget.NewLabel("Changed AI Action!")
-	hello.TextStyle = fyne.TextStyle{Bold: true}
-	hello.Alignment = fyne.TextAlignCenter
-
-	originalText := widget.NewLabel("AI Action: " + selectedPrompt.String())
-	originalText.Alignment = fyne.TextAlignCenter
-
-	w.SetContent(container.NewVBox(
-		hello,
-		originalText,
-	))
-	w.Show()
-	time.Sleep(3 * time.Second)
-	w.Close()
+func changedPromptNotification() {
+	guiApp.SendNotification(&fyne.Notification{
+		Title:   "AI Action Changed",
+		Content: "AI Action has been changed to:\n" + selectedPrompt.String(),
+	})
 }

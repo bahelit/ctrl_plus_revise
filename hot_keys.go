@@ -50,7 +50,7 @@ func handleCyclePromptKeyPressed() {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 
 	}
-	changedPromptPopUp()
+	changedPromptNotification()
 	robotgo.Sleep(1)
 }
 
