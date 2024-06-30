@@ -16,7 +16,7 @@ const (
 )
 
 // registerHotkeys registers the hotkeys for the application
-// TODO: Handle hotkeys hook when a user changes the mappings
+// TODO: Allow users changes the mappings
 func registerHotkeys(sysTray fyne.Window) {
 	hook.Register(hook.KeyDown, []string{robotgo.KeyA, robotgo.Alt, robotgo.Ctrl}, func(e hook.Event) {
 		slog.Info("ctrl-alt-a has been pressed", "event", e)
@@ -28,7 +28,7 @@ func registerHotkeys(sysTray fyne.Window) {
 		handleUserShortcutKeyPressed(sysTray)
 	})
 
-	// TODO ctrl+shift+(Up/Down) to change prompt, popup to show current prompt
+	// FIXME: This sysTray is not updating the selectedPrompt.
 	hook.Register(hook.KeyDown, []string{robotgo.Tab, robotgo.Ctrl, robotgo.Alt}, func(e hook.Event) {
 		slog.Info("alt-ctrl-tab has been pressed", "event", e)
 		handleCyclePromptKeyPressed()

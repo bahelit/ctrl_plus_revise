@@ -4,8 +4,10 @@ go 1.22.0
 
 require (
 	fyne.io/fyne/v2 v2.4.5
+	fyne.io/x/fyne v0.0.0-20240421102438-d5a080914907
 	github.com/docker/docker v27.0.1+incompatible
 	github.com/docker/go-connections v0.5.0
+	github.com/go-vgo/robotgo v0.110.1
 	github.com/ollama/ollama v0.1.46
 	github.com/robotn/gohook v0.41.0
 	golang.design/x/clipboard v0.7.0
@@ -32,7 +34,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-text/render v0.1.0 // indirect
 	github.com/go-text/typesetting v0.1.0 // indirect
-	github.com/go-vgo/robotgo v0.110.1 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect

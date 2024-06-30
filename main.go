@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fyne.io/fyne/v2/data/binding"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,6 +10,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/x/fyne/theme"
 	"github.com/docker/docker/client"
 	"github.com/ollama/ollama/api"
 	"golang.design/x/clipboard"
@@ -52,6 +53,7 @@ func main() {
 	}
 	guiApp = app.NewWithID("Ctrl+Revise")
 	guiApp.SetIcon(icon)
+	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
 	// Prepare the system tray
 	sysTray := setupSysTray(guiApp)
 	if guiApp.Preferences().BoolWithFallback(showStartWindow, true) {

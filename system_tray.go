@@ -5,13 +5,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/layout"
+	"fyne.io/x/fyne/layout"
+	//"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"log/slog"
 )
 
 const (
-	actionSelection        = "actionSelection"
 	replaceHighlightedText = "replaceHighlightedText"
 	showStartWindow        = "showStartWindow"
 	stopOllamaOnShutDown   = "stopOllamaOnShutDown"
@@ -21,6 +21,7 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	sysTray := guiApp.NewWindow("Ctrl+Revise AI Text Generator")
 	sysTray.SetTitle("Ctrl+Revise AI Text Generator")
 
+	combo := &widget.Select{}
 	// System tray menu
 	if desk, ok := guiApp.(desktop.App); ok {
 		m := fyne.NewMenu("Ctrl+Revise",
@@ -28,6 +29,7 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 				askQuestion(guiApp)
 			}),
 			fyne.NewMenuItem("Settings Window", func() {
+				combo.SetSelected(selectedPrompt.String())
 				sysTray.Show()
 			}),
 			fyne.NewMenuItem("Keyboard Shortcuts", func() {
@@ -66,7 +68,7 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 
 	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
 	chooseActionLabel.Alignment = fyne.TextAlignCenter
-	combo := defaultCopyActionDropDown()
+	combo = defaultCopyActionDropDown()
 
 	dropDownMenu := container.NewVBox(
 		chooseActionLabel,
@@ -186,7 +188,7 @@ func showAbout(guiApp fyne.App) {
 	label3 := widget.NewLabel("Contributors")
 	value3 := widget.NewLabel("Your name could be here, Wink Wink.")
 	value3.TextStyle = fyne.TextStyle{Bold: true}
-	grid := container.New(layout.NewFormLayout(), label1, value1, label2, value2, label3, value3)
+	grid := layout.NewResponsiveLayout(label1, value1, label2, value2, label3, value3)
 
 	aboutTitle := widget.NewLabel("About Ctrl+Revise!")
 	aboutTitle.Alignment = fyne.TextAlignCenter
@@ -217,7 +219,7 @@ func showShortcuts(guiApp fyne.App) {
 	value2 := widget.NewLabel("Ctrl + Shift + C")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	hbox := container.NewHBox(label2, label2Binding)
-	grid := container.New(layout.NewFormLayout(), label1, value1, hbox, value2)
+	grid := layout.NewResponsiveLayout(label1, value1, hbox, value2)
 	shortCuts.SetContent(grid)
 	shortCuts.Show()
 }
@@ -279,11 +281,13 @@ func askQuestion(guiApp fyne.App) {
 	})
 
 	topText := container.NewHBox(label1, label2)
-	grid := container.New(layout.NewGridWrapLayout(fyne.NewSize(470, 180)), text)
+	questionLayout := layout.NewResponsiveLayout(
+		layout.Responsive(topText), // all sizes to 100%
+		layout.Responsive(text, 1.0, 1.0))
+	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
 	questionWindow := container.NewVBox(
-		topText,
-		grid,
-		submitQuestionsButton,
+		questionLayout,
+		buttonLayout,
 	)
 	question.SetContent(questionWindow)
 	question.Show()

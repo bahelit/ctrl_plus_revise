@@ -28,22 +28,16 @@ Tools:
 
 Learn more about the GolangCI-Lint at [golangci-lint.run](https://golangci-lint.run/).
 
+## Starting
+
+
 Dependencies:
 
 - [Ollama](https://ollama.com/)
 
-Ollama is a tool for interacting with various LLMs.
+Ollama is a tool for interacting with various LLMs. If it is already running on the machine Ctrl+Revise will connect to it. If it is not running and [Docker](https://docker.com) is running, Ctrl+Revise will pull the latest Ollama Docker image and manage running it.
 
-Ctrl+Revise will pull that latest Ollama [Docker](https://docker.com) image and manage running it if docker is running.
-
-Docker command for AMD GPUs:
-```bash
-docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
-```
-
-Running Ollama natively **is** supported, but it is currently up to the user to download and start it. Managing Ollama is on the roadmap.
-
-For users who would like to run Ollama natively, download the latest release from the [Ollama.com](https://ollama.com/download) website.
+For users who would like to run Ollama on their own, you can download the latest release from the [Ollama.com](https://ollama.com/download) website.
 
 Arch Linux users can install Ollama from the official repository.
 
@@ -60,12 +54,17 @@ Nvidia Only:
 pacman -S ollama-cuda
 ```
 
+For Docker users, https://hub.docker.com/r/ollama/ollama provides the latest images for AMD and Nvidia GPUs.
+Docker command for AMD GPUs:
+```bash
+docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
+```
 
-## Starting
+
 
 Ctrl+Revise will attempt to connect to Ollama on startup. If it is not running it will attempt to start Ollama using Docker, first looking to see it the image is already downloaded, and if not, it will pull the latest image and start the container. Currently, the container image it pulls down is `ollama/ollama:rocm` which provides support for AMD GPUs.
 
-To start your project, use the `go run` command in your terminal or the make recipe `make run` from the project's root directory.
+To start the project, use the `go run` command in your terminal or the make recipe `make run` from the project's root directory.
 
 After cloning the repository, navigate to the project folder and run the following command:
 ```console
