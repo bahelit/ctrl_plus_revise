@@ -1,76 +1,31 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"crypto/sha256"
+	"fyne.io/fyne/v2/layout"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ollama/ollama/api"
-	"golang.design/x/clipboard"
 )
 
-func watchClipboardForChanges(keepListening chan bool) {
-	slog.Info("Starting ctrl_plus_revise clipboard listener...")
-	changed := clipboard.Watch(context.Background(), clipboard.FmtText)
-
-	var (
-		generated   api.GenerateResponse
-		clippyHash  []byte
-		hashesMatch bool
-		err         error
-	)
-	for clippy := range changed {
-		select {
-		case <-keepListening:
-			slog.Info("Stopping clippy watcher")
-			return
-		default:
-			clippyHash = sha256.New().Sum(clippy)
-			hashesMatch = bytes.Equal(lastRspHash, clippyHash)
-			if string(clippy) == generated.Response || hashesMatch {
-				slog.Info("Skipping duplicate Clipboard")
-				continue
-			}
-			slog.Info("Clipboard data changed", "contents", string(clippy))
-			generated, err = generateResponseFromOllama(ollamaClient, selectedPrompt, string(clippy))
-			if err != nil {
-				// TODO: Implement error handling, tell user to restart ollama, maybe we can restart ollama here?
-				slog.Error("Failed to communicate with Ollama", "error", err)
-				continue
-			}
-			lastRspHash = sha256.New().Sum([]byte(generated.Response))
-			clippyPopUp(guiApp, string(clippy), &generated)
-		}
-	}
-}
-
 func clippyPopUp(a fyne.App, input string, generated *api.GenerateResponse) {
-	w := a.NewWindow("llama listener")
+	w := a.NewWindow("Ctrl+Revise")
 	hello := widget.NewLabel("Glad To Help!")
 	hello.TextStyle = fyne.TextStyle{Bold: true}
 	hello.Alignment = fyne.TextAlignCenter
-	w.SetContent(container.NewVBox(
-		hello,
-		widget.NewLabel("Original text:\n"+input),
-		widget.NewLabel("AI Generated text:\n"+generated.Response),
+
+	originalText := widget.NewLabel("Original text:\n" + input)
+	originalText.Alignment = fyne.TextAlignLeading
+
+	generatedText := widget.NewLabel("AI Generated text:\n" + generated.Response)
+	generatedText.Alignment = fyne.TextAlignLeading
+
+	buttons := container.NewVBox(
 		widget.NewButton("Copy generated text to Clipboard", func() {
-			lastRspHash = sha256.New().Sum([]byte(generated.Response))
 			w.Clipboard().SetContent(generated.Response)
-			w.Hide()
-		}),
-		widget.NewButton("Try Again", func() {
-			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, TryAgain)
-			if err != nil {
-				slog.Error("Failed to re-generate", "error", err)
-				return
-			}
-			lastRspHash = sha256.New().Sum([]byte(reGenerated.Response))
-			clippyPopUp(a, input, &reGenerated)
-			w.Hide()
+			w.Close()
 		}),
 		widget.NewButton("Make the text more Friendly", func() {
 			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItFriendlyRedo)
@@ -78,9 +33,8 @@ func clippyPopUp(a fyne.App, input string, generated *api.GenerateResponse) {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastRspHash = sha256.New().Sum([]byte(reGenerated.Response))
 			clippyPopUp(a, input, &reGenerated)
-			w.Hide()
+			w.Close()
 		}),
 		widget.NewButton("Make the text a Bulleted List", func() {
 			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItAList)
@@ -88,16 +42,69 @@ func clippyPopUp(a fyne.App, input string, generated *api.GenerateResponse) {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastRspHash = sha256.New().Sum([]byte(reGenerated.Response))
 			clippyPopUp(a, input, &reGenerated)
-			w.Hide()
-		}),
+			w.Close()
+		}))
+
+	w.SetContent(container.NewVBox(
+		hello,
+		originalText,
+		generatedText,
+		buttons,
 	))
+	w.Show()
+}
 
-	// ctrlAltL := &desktop.CustomShortcut{KeyName: fyne.KeyL, Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift}
-	// w.Canvas().AddShortcut(ctrlAltL, func(shortcut fyne.Shortcut) {
-	//	slog.Info("Ctrl+Alt+L pressed")
-	//})
+func questionPopUp(a fyne.App, question string, generated *api.GenerateResponse) {
+	w := a.NewWindow("Ctrl+Revise")
+	w.Resize(fyne.NewSize(640, 400))
+	hello := widget.NewLabel("Glad to Help!")
+	hello.TextStyle = fyne.TextStyle{Bold: true}
+	hello.Alignment = fyne.TextAlignCenter
 
+	questionText := widget.NewLabel("Question:")
+	questionText.Alignment = fyne.TextAlignLeading
+	questionText.Wrapping = fyne.TextWrapWord
+	questionText.TextStyle = fyne.TextStyle{Bold: true}
+	questionText1 := widget.NewLabel(question)
+	questionText1.Alignment = fyne.TextAlignLeading
+	questionText1.Wrapping = fyne.TextWrapWord
+
+	generatedText := widget.NewLabel("AI Response:")
+	generatedText.Alignment = fyne.TextAlignLeading
+	generatedText.Wrapping = fyne.TextWrapWord
+	generatedText.TextStyle = fyne.TextStyle{Bold: true}
+	generatedText1 := widget.NewLabel(generated.Response)
+	generatedText1.Alignment = fyne.TextAlignLeading
+	generatedText1.Wrapping = fyne.TextWrapWord
+
+	vbox := container.NewVScroll(generatedText1)
+	vbox.SetMinSize(fyne.NewSize(630, 250))
+
+	buttons := container.NewPadded(container.NewVBox(
+		widget.NewButton("Copy generated text to Clipboard", func() {
+			w.Clipboard().SetContent(generated.Response)
+			w.Close()
+		}),
+		widget.NewButton("Make the text a Bulleted List", func() {
+			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItAList)
+			if err != nil {
+				slog.Error("Failed to re-generate", "error", err)
+				return
+			}
+			clippyPopUp(a, question, &reGenerated)
+			w.Close()
+		})))
+
+	grid := container.New(layout.NewGridLayout(1), vbox)
+
+	w.SetContent(container.NewVBox(
+		hello,
+		questionText,
+		questionText1,
+		generatedText,
+		grid,
+		buttons,
+	))
 	w.Show()
 }

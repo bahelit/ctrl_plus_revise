@@ -9,16 +9,19 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[CorrectGrammar-0]
-	_ = x[TryAgain-1]
-	_ = x[MakeItAList-2]
-	_ = x[MakeItFriendly-3]
-	_ = x[MakeItFriendlyRedo-4]
-	_ = x[MakeItProfessional-5]
+	_ = x[MakeItAList-1]
+	_ = x[MakeItFriendly-2]
+	_ = x[MakeItFriendlyRedo-3]
+	_ = x[MakeItProfessional-4]
+	_ = x[MakeASummary-5]
+	_ = x[MakeExplanation-6]
+	_ = x[MakeExpanded-7]
+	_ = x[MakeHeadline-8]
 }
 
-const _PromptMsg_name = "Correct GrammarTryAgainMakeItAListMake it FriendlyMake it FriendlyMake it Professional"
+const _PromptMsg_name = "Correct GrammarMake it a ListMake it FriendlyMake it FriendlyMake it ProfessionalMake a SummaryMake an ExplanationExpand on the textMake a Headline"
 
-var _PromptMsg_index = [...]uint8{0, 15, 23, 34, 50, 66, 86}
+var _PromptMsg_index = [...]uint8{0, 15, 29, 45, 61, 81, 95, 114, 132, 147}
 
 func (i PromptMsg) String() string {
 	if i < 0 || i >= PromptMsg(len(_PromptMsg_index)-1) {

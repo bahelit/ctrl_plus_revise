@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fyne.io/fyne/v2/data/binding"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -18,11 +19,10 @@ import (
 var (
 	ollamaClient            *api.Client
 	selectedPrompt          PromptMsg = CorrectGrammar
-	lastRspHash             []byte
+	selectedPromptBinding   binding.String
 	guiApp                  fyne.App
 	containerID             string
 	stopContainerOnShutDown bool = false
-	clippyCheckbox               = make(chan bool)
 )
 
 func main() {
@@ -31,6 +31,11 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to start clipboard listener!", "details", err.Error())
 		os.Exit(1)
+	}
+	selectedPromptBinding = binding.NewString()
+	err = selectedPromptBinding.Set(CorrectGrammar.String())
+	if err != nil {
+		slog.Error("Failed to set selectedPromptBinding", "error", err)
 	}
 
 	// Start the services.
@@ -58,12 +63,7 @@ func main() {
 	})
 
 	// Listen for global hotkeys
-	go registerHotkeys()
-
-	watchClipboard := guiApp.Preferences().BoolWithFallback(autoRunOnCopy, false)
-	if watchClipboard {
-		go watchClipboardForChanges(clippyCheckbox)
-	}
+	go registerHotkeys(sysTray)
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)

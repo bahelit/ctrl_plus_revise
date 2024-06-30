@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"fyne.io/fyne/v2/layout"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,10 +13,10 @@ import (
 )
 
 const (
-	actionSelection      = "actionSelection"
-	autoRunOnCopy        = "autoRunOnCopy"
-	showStartWindow      = "showStartWindow"
-	stopOllamaOnShutDown = "stopOllamaOnShutDown"
+	actionSelection        = "actionSelection"
+	replaceHighlightedText = "replaceHighlightedText"
+	showStartWindow        = "showStartWindow"
+	stopOllamaOnShutDown   = "stopOllamaOnShutDown"
 )
 
 func setupSysTray(guiApp fyne.App) fyne.Window {
@@ -24,6 +26,9 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	// System tray menu
 	if desk, ok := guiApp.(desktop.App); ok {
 		m := fyne.NewMenu("Ctrl+Revise",
+			fyne.NewMenuItem("Ask a Question", func() {
+				askQuestion(guiApp)
+			}),
 			fyne.NewMenuItem("Settings Window", func() {
 				sysTray.Show()
 			}),
@@ -40,27 +45,33 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 
 	// System tray window content
 	startUpCheckBox := showOnStartUpCheckBox(guiApp)
-	runOnCopyCheckBox := autoRunOnCopyCheckBox(guiApp)
+	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
 	stopOllamaCheckBox := stopOllamaOnShutdownCheckBox(guiApp)
-	infoText, welcomeText := mainWindowText()
+	welcomeText := mainWindowText()
 	hideWindowButton := widget.NewButton("Hide This Window", func() {
 		sysTray.Hide()
 	})
 	keyboardShortcutsButton := widget.NewButton("Show Keyboard Shortcuts", func() {
 		showShortcuts(guiApp)
 	})
+	askQuestionsButton := widget.NewButton("Ask a Question", func() {
+		askQuestion(guiApp)
+	})
 	mainWindow := container.NewVBox(
 		welcomeText,
-		infoText,
-		hideWindowButton,
+		askQuestionsButton,
 		keyboardShortcutsButton,
+		hideWindowButton,
+		replaceHighlightedTextCheckBox,
 		startUpCheckBox,
-		runOnCopyCheckBox,
 		stopOllamaCheckBox)
 
+	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
+	chooseActionLabel.Alignment = fyne.TextAlignCenter
 	combo := defaultCopyActionDropDown()
+
 	dropDownMenu := container.NewVBox(
-		widget.NewLabel("Choose the response type to use when the clipboard is being monitored:"),
+		chooseActionLabel,
 		combo)
 	sysTray.SetContent(container.NewVBox(mainWindow, dropDownMenu))
 
@@ -71,12 +82,16 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	return sysTray
 }
 
-func mainWindowText() (infoText, welcomeText *widget.Label) {
-	welcomeText = widget.NewLabel("Welcome to Ctrl+Revise!")
+func mainWindowText() *fyne.Container {
+	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
-	infoText = widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
-	return infoText, welcomeText
+	shortcutText := widget.NewLabel("Pressing \"Ctrl + Shift + C\" will replace the highlighted text with an AI generated a response.")
+	shortcutText.Alignment = fyne.TextAlignCenter
+	shortcutText.TextStyle = fyne.TextStyle{Bold: true}
+	closeMeText := widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
+	closeMeText.Alignment = fyne.TextAlignCenter
+	return container.NewVBox(welcomeText, closeMeText, shortcutText)
 }
 
 func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
@@ -94,27 +109,24 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 	return startUpCheck
 }
 
-func autoRunOnCopyCheckBox(guiApp fyne.App) *widget.Check {
-	autoGenerate := guiApp.Preferences().BoolWithFallback(autoRunOnCopy, false)
-	runOnCopy := widget.NewCheck("Generate anytime text is copied (not saved on restart)", func(b bool) {
+func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
+	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	runOnCopy := widget.NewCheck("Replace highlighted text with AI response", func(b bool) {
 		if b == false {
-			slog.Info("Stopping clipboard watcher checkbox is off")
-			guiApp.Preferences().SetBool(autoRunOnCopy, false)
-			close(clippyCheckbox)
+			slog.Info("Replace highlighted checkbox is off")
+			guiApp.Preferences().SetBool(replaceHighlightedText, false)
 		} else if b == true {
-			slog.Info("Starting clipboard watcher checkbox is on")
-			guiApp.Preferences().SetBool(autoRunOnCopy, true)
-			clippyCheckbox = make(chan bool)
-			go watchClipboardForChanges(clippyCheckbox)
+			slog.Info("Replace highlighted checkbox is on")
+			guiApp.Preferences().SetBool(replaceHighlightedText, true)
 		}
 	})
-	runOnCopy.Checked = autoGenerate
+	runOnCopy.Checked = replaceText
 	return runOnCopy
 }
 
 func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
 	stopOllama := guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDown, false)
-	startUpCheck := widget.NewCheck("Stop Ollama on Program Exit", func(b bool) {
+	startUpCheck := widget.NewCheck("Stop AI agent on Program Exit", func(b bool) {
 		if b == false {
 			slog.Info("Hiding start window")
 			guiApp.Preferences().SetBool(stopOllamaOnShutDown, false)
@@ -128,7 +140,9 @@ func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
 }
 
 func defaultCopyActionDropDown() *widget.Select {
-	combo := widget.NewSelect([]string{CorrectGrammar.String(), MakeItProfessional.String(), MakeItFriendly.String()},
+	// FIXME - Not updating when the selection is changed with keyboard shortcut
+	combo := widget.NewSelect([]string{CorrectGrammar.String(), MakeItProfessional.String(), MakeItFriendly.String(),
+		MakeHeadline.String(), MakeASummary.String(), MakeExpanded.String(), MakeExplanation.String(), MakeItAList.String()},
 		func(value string) {
 			switch value {
 			case CorrectGrammar.String():
@@ -137,12 +151,27 @@ func defaultCopyActionDropDown() *widget.Select {
 				selectedPrompt = MakeItProfessional
 			case MakeItFriendly.String():
 				selectedPrompt = MakeItFriendly
+			case MakeHeadline.String():
+				selectedPrompt = MakeHeadline
+			case MakeASummary.String():
+				selectedPrompt = MakeASummary
+			case MakeExpanded.String():
+				selectedPrompt = MakeExpanded
+			case MakeExplanation.String():
+				selectedPrompt = MakeExplanation
+			case MakeItAList.String():
+				selectedPrompt = MakeItAList
 			default:
 				slog.Error("Invalid selection", "value", value)
 				selectedPrompt = CorrectGrammar
 			}
+			err := selectedPromptBinding.Set(selectedPrompt.String())
+			if err != nil {
+				slog.Error("Failed to set selectedPromptBinding", "error", err)
+			}
 		})
-	combo.SetSelected(CorrectGrammar.String())
+	combo.SetSelected(selectedPrompt.String())
+
 	return combo
 }
 
@@ -164,7 +193,10 @@ func showAbout(guiApp fyne.App) {
 	aboutTitle := widget.NewLabel("About Ctrl+Revise!")
 	aboutTitle.Alignment = fyne.TextAlignCenter
 	aboutTitle.TextStyle = fyne.TextStyle{Bold: true}
-	aboutText := widget.NewLabel("Ctrl+Revise is here to help you unleash your inner wordsmith!\nThis nifty tool uses clever local AI agents to generate text based on what you copy and paste.\n\nNeed some professional flair? Got a friendly tone in mind?\nOr maybe you just want to make sure your writing is grammatically correct?\nLlama Launcher's got you covered. Simply copy the generated text right onto your clipboard, and you're good to go!")
+	aboutText := widget.NewLabel("Ctrl+Revise is here to help you unleash your inner wordsmith!\n" +
+		"This nifty tool uses clever local AI agents to generate text based on what you copy and paste.\n\n" +
+		"Need some professional flair? Got a friendly tone in mind?\nOr maybe you just want to make sure your writing is grammatically correct?\n" +
+		"Llama Launcher's got you covered. Simply copy the generated text right onto your clipboard, and you're good to go!")
 
 	aboutWindow := container.NewVBox(
 		aboutTitle,
@@ -179,16 +211,101 @@ func showShortcuts(guiApp fyne.App) {
 	slog.Info("Showing Shortcuts")
 	shortCuts := guiApp.NewWindow("Ctrl+Revise Shortcuts")
 
-	label1 := widget.NewLabel(CorrectGrammar.String())
-	value1 := widget.NewLabel("Ctrl + Shift + G")
+	label1 := widget.NewLabel("Ask a Question with highlighted text")
+	value1 := widget.NewLabel("Alt + Ctrl + A")
 	value1.TextStyle = fyne.TextStyle{Bold: true}
-	label2 := widget.NewLabel(MakeItProfessional.String())
-	value2 := widget.NewLabel("Ctrl + Shift + R")
+	label2 := widget.NewLabel("Replace highlighted text with: ")
+	label2Binding := widget.NewLabelWithData(selectedPromptBinding)
+	value2 := widget.NewLabel("Ctrl + Shift + C")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
-	label3 := widget.NewLabel(MakeItFriendly.String())
-	value3 := widget.NewLabel("Ctrl + Shift + F")
-	value3.TextStyle = fyne.TextStyle{Bold: true}
-	grid := container.New(layout.NewFormLayout(), label1, value1, label2, value2, label3, value3)
+	hbox := container.NewHBox(label2, label2Binding)
+	grid := container.New(layout.NewFormLayout(), label1, value1, hbox, value2)
 	shortCuts.SetContent(grid)
 	shortCuts.Show()
+}
+
+func askQuestion(guiApp fyne.App) {
+	slog.Info("Asking Question")
+	var (
+		screenHeight float32 = 180.0
+		screenWidth  float32 = 480.0
+	)
+	question := guiApp.NewWindow("Ctrl+Revise Questions")
+	question.Resize(fyne.NewSize(screenWidth, screenHeight))
+
+	label1 := widget.NewLabel("Ask a Question")
+	label1.TextStyle = fyne.TextStyle{Bold: true}
+	label2 := widget.NewLabel("Press Shift + Enter to submit your question.")
+	label2.TextStyle = fyne.TextStyle{Italic: true}
+
+	text := widget.NewMultiLineEntry()
+	text.PlaceHolder = "Ask your question here, remember this is an AI and important\n" +
+		"questions should be verified with other sources."
+	text.OnSubmitted = func(s string) {
+		slog.Info("Question submitted - keyboard shortcut", "text", s)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		response, err := askAI(ollamaClient, s)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+		}
+		questionPopUp(guiApp, s, &response)
+		question.Close()
+	}
+	text.Validator = func(s string) error {
+		if len(s) < 10 {
+			return fmt.Errorf("question too short")
+		}
+		if len(s) > 10000000 {
+			return fmt.Errorf("question too long, testing is needed before increasing the max length")
+		}
+		return nil
+	}
+
+	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+		slog.Info("Question submitted", "text", text.Text)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		response, err := askAI(ollamaClient, text.Text)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+		}
+		questionPopUp(guiApp, text.Text, &response)
+		question.Close()
+	})
+
+	topText := container.NewHBox(label1, label2)
+	grid := container.New(layout.NewGridWrapLayout(fyne.NewSize(470, 180)), text)
+	questionWindow := container.NewVBox(
+		topText,
+		grid,
+		submitQuestionsButton,
+	)
+	question.SetContent(questionWindow)
+	question.Show()
+}
+
+func changedPromptPopUp() {
+	w := guiApp.NewWindow("Ctrl+Revise")
+	w.CenterOnScreen()
+	hello := widget.NewLabel("Changed AI Action!")
+	hello.TextStyle = fyne.TextStyle{Bold: true}
+	hello.Alignment = fyne.TextAlignCenter
+
+	originalText := widget.NewLabel("AI Action: " + selectedPrompt.String())
+	originalText.Alignment = fyne.TextAlignCenter
+
+	w.SetContent(container.NewVBox(
+		hello,
+		originalText,
+	))
+	w.Show()
+	time.Sleep(3 * time.Second)
+	w.Close()
 }

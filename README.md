@@ -6,17 +6,15 @@
 - [Deploying Ctrl+Revise](#deploying-ctrlrevise)
 - [About Ctrl+Revise](#about-ctrlrevise)
 
-<img src="images/Screenshot_Main_Window.png" alt="Main_Window" style="display:block;margin:0 auto;">
-
-<img src="images/Screenshot_Keyboard_Shortcuts.png" alt="Shortcuts_Window" style="display:block;margin:0 auto;">
-
 
 ## Overview
 
-Ctrl+Revise is locally-run artificial intelligence (AI) tool designed to elevate your writing standards. This desktop application leverages AI-driven suggestions to refine and improve your written content. With real-time clipboard monitoring, it detects new text being copied and offers expert insights to enhance its clarity, coherence, and overall professionalism.
+Ctrl+Revise is locally-run artificial intelligence (AI) tool designed to elevate your writing standards. This desktop application works in any text program, providing real-time suggestions for improving your writing. Ctrl+Revise uses a large language model to analyze your text and suggest improvements, such as grammar corrections, sentence structure, and vocabulary enhancements.
 
 
-Additionally, Ctrl+Revise features customizable keyboard shortcuts for streamlined workflow, allowing you to focus on the creative process. This powerful tool is compatible with a range of platforms, including Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
+Ctrl+Revise uses keyboard shortcuts that when pressed have the AI act on the text that is currently selected (highlighted) in the text editor and the response replaces the highlighted text and is added to the clipboard to be pasted elsewhere.
+
+This tool is compatible Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
 
 None of the text you copy is stored or sent to any server. The AI model runs locally on your machine, ensuring your privacy and data security.
 
@@ -34,24 +32,40 @@ Dependencies:
 
 - [Ollama](https://ollama.com/)
 
-Ollama is a tool for interacting with various LLMs. [Docker](https://docker.com) is being used to run Ollama.
+Ollama is a tool for interacting with various LLMs.
 
-Ctrl+Revise will pull that latest Ollama image and manage running it.
+Ctrl+Revise will pull that latest Ollama [Docker](https://docker.com) image and manage running it if docker is running.
 
-Running Ollama natively **is** supported, but it is currently up to the user to download and start it. Managing Ollama natively is on the roadmap.
+Docker command for AMD GPUs:
+```bash
+docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
+```
+
+Running Ollama natively **is** supported, but it is currently up to the user to download and start it. Managing Ollama is on the roadmap.
 
 For users who would like to run Ollama natively, download the latest release from the [Ollama.com](https://ollama.com/download) website.
 
-Ctrl+Revise will attempt to connect to Ollama on startup. If it is not running it will attempt to start Ollama using Docker, first looking to see it the image is already downloaded, and if not, it will pull the latest image and start the container. Currently, the container image it pulls down is `ollama/ollama:rocm` which provides support for AMD GPUs. 
-The docker command that is run is:
+Arch Linux users can install Ollama from the official repository.
+
+CPU Only:
 ```bash
-docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
+pacman -S ollama
+```
+AMD Only:
+```bash
+pacman -S ollama-rocm
+```
+Nvidia Only:
+```bash
+pacman -S ollama-cuda
 ```
 
 
 ## Starting
 
-To start your project, us the `go run` command in your terminal or the make recipe `make run`
+Ctrl+Revise will attempt to connect to Ollama on startup. If it is not running it will attempt to start Ollama using Docker, first looking to see it the image is already downloaded, and if not, it will pull the latest image and start the container. Currently, the container image it pulls down is `ollama/ollama:rocm` which provides support for AMD GPUs.
+
+To start your project, use the `go run` command in your terminal or the make recipe `make run` from the project's root directory.
 
 After cloning the repository, navigate to the project folder and run the following command:
 ```console
@@ -59,6 +73,7 @@ go run .
 ```
 
 ## Developing
+
 To develop the project, you need to have the following tools installed on your machine:
 - [Go](https://golang.org/dl/)
 - [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
@@ -67,11 +82,16 @@ To develop the project, you need to have the following tools installed on your m
 #### The Stringer tool
 This project uses the stringer tool, this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
 ```bash
-go install golang.org/x/tools/cmd/stringer@latest
-stringer -linecomment -type=PromptMsg
+go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=PromptMsg
 ```
 
 
+## Screenshots
+
+![Main Menu](images/Screenshot_Main_Window.png)
+
+![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png)
+
 ## About Ctrl+Revise
 
-The [**Ctrl+Revise**](https://ctrlplusrevise.com) is in early development and there are many features that are planned to be added. The project is open-source and you can contribute to it by submitting a pull request.
+The [**Ctrl+Revise**](https://ctrlplusrevise.com) is in early development and there are many features that are planned to be added. This project is open-source and you can contribute to it by submitting a pull request.
