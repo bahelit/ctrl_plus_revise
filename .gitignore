@@ -21,7 +21,7 @@ pb_data/
 node_modules/
 
 # Vendor folders.
-vendor/
+#vendor/ Flatpak needs this folder to be present in the repo.
 
 # Temp folders.
 .parcel-cache/
