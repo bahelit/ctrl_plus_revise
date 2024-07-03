@@ -18,7 +18,8 @@ This tool is compatible Windows, Linux, and macOS, supporting AMD, Nvidia, and A
 
 The AI model runs locally on your machine, ensuring your privacy and data security.
 
-[!CAUTION] The use of the Speak feature and text reader currently sends the text to a third-party (Google Translate) for processing.
+> [!CAUTION]
+> The use of the Speak feature and text reader currently sends the text to a third-party (Google Translate) for processing.
 
 
 ## Features
@@ -32,9 +33,11 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 - **Audio feedback**: Ctrl+Revise provides audio feedback for the suggestions made by the AI model.
 - **Screen reader support**: Ctrl+Revise supports reading the highlighted for visually impaired users.
 
-[!NOTE] The Speak feature and text reader are disabled by default and can be enabled in the settings.
+> [!NOTE]
+> The Speak feature and text reader are disabled by default and can be enabled in the settings.
 
-[!NOTE] The Docker integration is disabled by default and can be enabled in the settings.
+> [!NOTE]
+> The Docker integration is disabled by default and can be enabled in the settings.
 
 ## Starting
 
