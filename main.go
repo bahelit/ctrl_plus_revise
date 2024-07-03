@@ -151,9 +151,12 @@ func setupServices() bool {
 	var err error
 	// Start the speech handler
 	speech = htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
-	// TODO: the audio files need to be cleaned up periodically.
-	dirInfo, _ := dirSize.GetDirInfo(os.DirFS("audio"))
-	slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
+	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakResponse {
+		// TODO: the audio files need to be cleaned up periodically.
+		dirInfo, _ := dirSize.GetDirInfo(os.DirFS("audio"))
+		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
+	}
 
 	useDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, false)
 	if useDocker {
