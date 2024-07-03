@@ -1,0 +1,61 @@
+app-id: com.bahelit.ctrl_plus_revise
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+sdk-version: '23.08'
+branch: 46
+#sdk-extensions:
+#  - org.freedesktop.Sdk.Extension.golang
+command: ctrl_plus_revise
+
+finish-args:
+  - --share=ipc # Share IPC namespace with the host (necessary for X11).
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=session-bus
+
+  # Needed to support desktop notifications.
+  - --talk-name=org.freedesktop.Notifications
+
+  # Allowing access to the home directory.
+  - --filesystem=home
+
+modules:
+  - name: ollama
+    buildsystem: simple
+    build-commands:
+      - install -Dm0755 ollama* /app/bin/ollama
+    sources:
+      - type: file
+        url: "https://github.com/ollama/ollama/releases/download/v0.1.48/ollama-linux-amd64"
+        sha256: 7641b21e9d0822ba44e494f5ed3d3796d9e9fcdf4dbb66064f8c34c865bbec0b
+        only-arches: [ x86_64 ]
+  - name: setup
+    buildsystem: simple
+    build-commands:
+      - install -Dm00644 icon.png /app/share/icons/hicolor/256x256/apps/$FLATPAK_ID.png
+      - install -Dm00644 $FLATPAK_ID.desktop $FLATPAK_DEST/share/applications/$FLATPAK_ID.desktop
+    sources:
+      - type: dir
+        path: "flatpak/"
+  - name: ctrl_plus_revise
+    buildsystem: simple
+    build-commands:
+      - install -Dm00755 ctrl_plus_revise-linux-amd64 /app/bin/ctrl_plus_revise
+    sources:
+      - type: file
+        path: "bin/ctrl_plus_revise-linux-amd64"
+#        url: '.'
+        only-arches: [ x86_64 ]
+#        url: "https://github.com/bahelit/ctrl_plus_revise" # TODO make binaries available in git, link them here
+#        sha256: n/a # Update by running sha256sum on the file linked in the url.
+#  - name: flatpack_run.sh
+#    buildsystem: simple
+#    build-commands:
+#      - install -Dm00755 flatpack_run.sh /app/bin/flatpack_run.sh
+#    sources:
+#      - type: file
+#        path: "scripts/flatpack_run.sh"

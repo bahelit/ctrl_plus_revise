@@ -25,3 +25,6 @@ lint:
 stringer:
 	@echo "\n> Run stringer...\n"
 	go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=PromptMsg
+	go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=processingDevice
+	go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=gpuModel
+	go run golang.org/x/tools/cmd/stringer@latest -linecomment -type=ModelName

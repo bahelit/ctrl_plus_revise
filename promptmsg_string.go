@@ -19,9 +19,9 @@ func _() {
 	_ = x[MakeHeadline-8]
 }
 
-const _PromptMsg_name = "Correct GrammarMake it a ListMake it FriendlyMake it FriendlyMake it ProfessionalMake a SummaryMake an ExplanationExpand on the textMake a Headline"
+const _PromptMsg_name = "Correct GrammarMake it a ListMake it FriendlyMake it FriendlyMake it ProfessionalMake a SummaryExplain it like I'm 5Expand on the textMake a Headline"
 
-var _PromptMsg_index = [...]uint8{0, 15, 29, 45, 61, 81, 95, 114, 132, 147}
+var _PromptMsg_index = [...]uint8{0, 15, 29, 45, 61, 81, 95, 116, 134, 149}
 
 func (i PromptMsg) String() string {
 	if i < 0 || i >= PromptMsg(len(_PromptMsg_index)-1) {

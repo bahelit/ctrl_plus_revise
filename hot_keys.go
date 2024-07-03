@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
-	"golang.design/x/clipboard"
 )
 
 const (
@@ -19,20 +18,25 @@ const (
 // TODO: Allow users changes the mappings
 func registerHotkeys(sysTray fyne.Window) {
 	hook.Register(hook.KeyDown, []string{robotgo.KeyA, robotgo.Alt, robotgo.Ctrl}, func(e hook.Event) {
-		slog.Info("ctrl-alt-a has been pressed", "event", e)
+		slog.Debug("ctrl-alt-a has been pressed", "event", e)
 		handleAskKeyPressed(sysTray)
 	})
 
 	hook.Register(hook.KeyDown, []string{robotgo.KeyC, robotgo.Ctrl, robotgo.Shift}, func(e hook.Event) {
-		slog.Info("ctrl-shift-c has been pressed", "event", e)
+		slog.Debug("ctrl-shift-c has been pressed", "event", e)
 		handleUserShortcutKeyPressed(sysTray)
 	})
 
-	// FIXME: This sysTray is not updating the selectedPrompt.
 	hook.Register(hook.KeyDown, []string{robotgo.Tab, robotgo.Ctrl, robotgo.Alt}, func(e hook.Event) {
-		slog.Info("alt-ctrl-tab has been pressed", "event", e)
+		slog.Debug("alt-ctrl-tab has been pressed", "event", e)
 		handleCyclePromptKeyPressed()
-		slog.Info("Selected prompt", "prompt", selectedPrompt)
+		slog.Debug("Changed AI action", "prompt", selectedPrompt)
+	})
+
+	hook.Register(hook.KeyDown, []string{robotgo.KeyR, robotgo.Ctrl, robotgo.Alt}, func(e hook.Event) {
+		slog.Debug("alt-ctrl-r has been pressed", "event", e)
+		handleReadTextPressed(sysTray)
+		slog.Debug("Reading Text aloud")
 	})
 
 	s := hook.Start()
@@ -50,26 +54,45 @@ func handleCyclePromptKeyPressed() {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 
 	}
+	updateDropDownMenus()
 	changedPromptNotification()
 	robotgo.Sleep(1)
 }
 
-func handleUserShortcutKeyPressed(sysTray fyne.Window) {
+func handleReadTextPressed(sysTray fyne.Window) {
 	robotgo.Sleep(1)
-	err := robotgo.KeyPress(robotgo.KeyC, robotgo.Ctrl)
+	err := robotgo.KeyTap(robotgo.KeyC, robotgo.Ctrl)
 	if err != nil {
 		slog.Error("Failed to send copy command", "error", err)
 	}
 
-	clippy := clipboard.Read(clipboard.FmtText)
-	if clippy == nil {
-		slog.Info("Clipboard is empty")
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if !speakAIResponse {
+		slog.Debug("Skipping reading text aloud", "speakAIResponse", speakAIResponse)
 		return
 	}
 
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	clippy := sysTray.Clipboard().Content()
 
-	generated, err := askAIWithPromptMsg(ollamaClient, selectedPrompt, string(clippy))
+	_ = speech.Speak("")
+	speakErr := speech.Speak(clippy)
+	if speakErr != nil {
+		slog.Error("Failed to speak", "error", speakErr)
+	}
+}
+
+func handleUserShortcutKeyPressed(sysTray fyne.Window) {
+	robotgo.Sleep(1)
+	err := robotgo.KeyTap(robotgo.KeyC, robotgo.Ctrl)
+	if err != nil {
+		slog.Error("Failed to send copy command", "error", err)
+	}
+
+	clippy := sysTray.Clipboard().Content()
+
+	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
+
+	generated, err := askAIWithPromptMsg(ollamaClient, selectedPrompt, ModelName(model), clippy)
 	if err != nil {
 		// TODO: Implement error handling, tell user to restart ollama, maybe we can restart ollama here?
 		slog.Error("Failed to communicate with Ollama", "error", err)
@@ -77,10 +100,19 @@ func handleUserShortcutKeyPressed(sysTray fyne.Window) {
 	}
 
 	// Send a paste command to the operating system
+	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
 	if replaceText {
 		robotgo.TypeStr(generated.Response)
 	} else {
 		robotgo.TypeStr(string(clippy) + " " + generated.Response)
+	}
+
+	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakResponse {
+		speakErr := speech.Speak(generated.Response)
+		if speakErr != nil {
+			slog.Error("Failed to speak", "error", speakErr)
+		}
 	}
 
 	// Copy the generated text to the clipboard
@@ -89,22 +121,16 @@ func handleUserShortcutKeyPressed(sysTray fyne.Window) {
 
 func handleAskKeyPressed(sysTray fyne.Window) {
 	robotgo.Sleep(1)
-	err := robotgo.KeyPress(robotgo.KeyC, robotgo.Ctrl)
+	err := robotgo.KeyTap(robotgo.KeyC, robotgo.Ctrl)
 	if err != nil {
 		slog.Error("Failed to send copy command", "error", err)
 
 	}
 
-	clippy := clipboard.Read(clipboard.FmtText)
-	if clippy == nil {
-		slog.Info("Clipboard is empty")
-		return
-	}
-
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	clippy := sysTray.Clipboard().Content()
 
 	robotgo.TypeStr(thinkingMsg)
-	generated, err := askAI(ollamaClient, string(clippy))
+	generated, err := askAI(ollamaClient, selectedModel, clippy)
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
 	}
@@ -117,10 +143,19 @@ func handleAskKeyPressed(sysTray fyne.Window) {
 	}
 
 	// Send a paste command to the operating system
+	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
 	if replaceText {
 		robotgo.TypeStr(generated.Response)
 	} else {
-		robotgo.TypeStr(string(clippy) + " " + generated.Response)
+		robotgo.TypeStr(clippy + " " + generated.Response)
+	}
+
+	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakResponse {
+		speakErr := speech.Speak(generated.Response)
+		if speakErr != nil {
+			slog.Error("Failed to speak", "error", speakErr)
+		}
 	}
 
 	// Copy the generated text to the clipboard
@@ -130,20 +165,20 @@ func handleAskKeyPressed(sysTray fyne.Window) {
 func fallbackPasteCommands() error {
 	var err error
 	if runtime.GOOS == "darwin" { // TODO: Untested
-		slog.Info("Sending paste command to MacOS")
+		slog.Debug("Sending paste command to MacOS")
 		cmd := exec.Command("cgtool", "createkeyboardevent", "command+v")
 		err = cmd.Run()
 	} else if runtime.GOOS == "linux" {
-		slog.Info("Sending paste command to Linux X11 with xdotool")
+		slog.Debug("Sending paste command to Linux X11 with xdotool")
 		cmd := exec.Command("xdotool", "key", "BackSpace", "ctrl+v") // Ctrl+V (paste) X11
 		err = cmd.Run()
 		if err != nil { // TODO: Untested
-			slog.Info("xdotool failed try Wayland equivalent wtype")
+			slog.Debug("xdotool failed try Wayland equivalent wtype")
 			cmd := exec.Command("wtype", "key", "BackSpace", "ctrl+v") // Ctrl+V (paste) Wayland
 			err = cmd.Run()
 		}
 	} else if runtime.GOOS == "windows" { // TODO: Untested
-		slog.Info("Sending paste command to Windows")
+		slog.Debug("Sending paste command to Windows")
 		cmd := exec.Command("autohotkey", "sendevent,^v")
 		err = cmd.Run()
 	}

@@ -4,13 +4,19 @@ import (
 	"context"
 	"log/slog"
 
+	"fyne.io/fyne/v2"
 	"github.com/ollama/ollama/api"
 )
 
-type ModelName string
+//go:generate stringer -linecomment -type=ModelName
+type ModelName int
 
 const (
-	Llama3 ModelName = "llama3"
+	BashBot      ModelName = iota // bashbot:latest
+	CodeLlama                     // codellama:latest
+	CodeLlama13b                  // codellama:13b
+	Gemma                         // gemma:latest
+	Llama3                        // llama3:latest
 )
 
 //go:generate stringer -linecomment -type=PromptMsg
@@ -24,42 +30,76 @@ const (
 	MakeItFriendlyRedo // Make it Friendly
 	MakeItProfessional // Make it Professional
 	MakeASummary       // Make a Summary
-	MakeExplanation    // Make an Explanation
+	MakeExplanation    // Explain it like I'm 5
 	MakeExpanded       // Expand on the text
 	MakeHeadline       // Make a Headline
 )
 
-var promptToText = map[PromptMsg]string{
-	CorrectGrammar:     "Act as a writer. Correct the following text for grammar, punctuation, and spelling errors without explaining what changed, just provide the corrected text: ",
-	MakeItFriendly:     "Act as a writer. Give the following text a friendly makeover by injecting a touch of humor, warmth, and approachability. You don't have to explain your changes, just make the text more friendly: ",
-	MakeItFriendlyRedo: "Act as a writer. Give the previous text a friendly makeover by injecting a touch of humor, warmth, and approachability. You don't have to explain your changes, just make the text more friendly.",
-	MakeItAList:        "Act as a writer. Transform the previous text into a well-organized, easy-to-read bulleted list, while maintaining key details and phrases. Ensure the list is concise yet informative, making it suitable for a formal report, presentation, or proposal. Do not provide an explanation, just provide the list.", //nolint:lll - long line
-	MakeItProfessional: "Act as a writer. Rephrase the following sentence to make it sound more professional and suitable for a formal business document or presentation, only include the rephrased sentence please don't provide an explanation: ",
-	MakeHeadline:       "Act as a writer. Craft a compelling headline that captures the essence of the following block of text. Keep it concise, attention-grabbing, and accurate. Output only the text and nothing else, do not chat, no preamble, get to the point. ",
-	MakeASummary:       "Act as a writer. Summarize the following block of text in 50-75 words, focusing on the main ideas and key points. Use your own words to condense the information without sacrificing clarity or accuracy. Output only the text and nothing else, do not chat, no preamble, get to the point. ", //nolint:lll - long line
-	MakeExplanation:    "Act as a writer. Explain the following block of text in 100-150 words, providing context, clarifying complex concepts, and making connections to related ideas. Output only the text and nothing else, do not chat, no preamble, get to the point. ",
-	MakeExpanded:       "Act as a writer. Expand the text by adding more details while keeping the same meaning. Output only the text and nothing else, do not chat, no preamble, get to the point. ",
+type promptText struct {
+	prompt      string
+	promptExtra string
 }
 
-func (prompt PromptMsg) toText() string {
+var promptToText = map[PromptMsg]promptText{
+	CorrectGrammar: {
+		prompt:      "Act as a writer. Correct the following block of text by fixing all spelling, grammar, punctuation, and capitalization errors. Provide an error-free version of the original text: ",
+		promptExtra: " Return the corrected text without explaining what changed, just provide the corrected text"},
+	MakeItFriendly: {
+		prompt:      "Give the following text a friendly makeover by injecting a touch of humor, warmth, and approachability: ",
+		promptExtra: " You don't have to explain your changes, just make the text more friendly"},
+	MakeItFriendlyRedo: {
+		prompt:      "Act as a writer. Give the previous text a friendly makeover by injecting a touch of humor, warmth, and approachability. ",
+		promptExtra: " You don't have to explain your changes, just make the text more friendly"},
+	MakeItAList: {
+		prompt:      "Read the following text and create a bulleted list summarizing its main points: ",
+		promptExtra: " No need to explain your list, just provide the main points in a list format."},
+	MakeItProfessional: {
+		prompt:      "Act as a writer. Read the following text carefully and revise it to present a more professional tone, ensuring accurate and proper usage of grammar and punctuation: ",
+		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text in a clear and concise format with no explanation."},
+	MakeHeadline: {
+		prompt:      "Act as a writer. Read the following text carefully and create a concise and attention-grabbing headline that summarizes its main idea or key point: ",
+		promptExtra: " Your headline should be no more than 5-7 words, yet effectively capture the essence of the text. Please submit your headline in the format below:\n\n[Headline]"},
+	MakeASummary: {
+		prompt:      "Act as a writer. Read the following text carefully and create a brief summary that captures the main points and essential information: ",
+		promptExtra: "Your summary should be no more than 150-200 words, yet effectively convey the key ideas and takeaways from the original text. Please submit your summary in a clear and concise format with no explanation."}, //nolint:lll - long line
+	MakeExplanation: {
+		prompt:      "Explain the following block of text in a way that a 5-year-old could understand. Use simple language, relatable examples, and avoid technical jargon: ",
+		promptExtra: "Goals: Simplify complex ideas into easy-to-grasp concepts. Use analogies or relatable scenarios to help explain abstract concepts. Make it fun and engaging while still being accurate"},
+	MakeExpanded: {
+		prompt: "Read the following text carefully and determine its nature: does it appear to be based on factual information or is it fictional in nature?: ",
+		promptExtra: " If the text appears to be non-fictional in nature, expand on it by incorporating relevant, accurate, and verifiable information from credible sources. " +
+			"Ensure that all additional information is properly sourced and attributed to credible sources.\n\n\nHowever, if the text appears to be fictional in nature, feel free to expand on it by adding to the story, developing characters, or exploring themes. " +
+			"Please keep your additions consistent with the tone and style of the original text."},
+}
+
+func (prompt PromptMsg) promptToText() string {
 	text, ok := promptToText[prompt]
 	if !ok {
 		slog.Error("Unknown prompt", "prompt", prompt)
-		return promptToText[CorrectGrammar]
+		return promptToText[CorrectGrammar].prompt
 	}
-	return text
+	return text.prompt
 }
 
-func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
+func (prompt PromptMsg) promptExtraToText() string {
+	text, ok := promptToText[prompt]
+	if !ok {
+		slog.Error("Unknown prompt", "prompt", prompt)
+		return promptToText[CorrectGrammar].promptExtra
+	}
+	return text.promptExtra
+}
+
+func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  string(Llama3),
-		Prompt: prompt.toText() + inputForPrompt,
+		Model:  model.String(),
+		Prompt: prompt.promptToText() + "[" + inputForPrompt + "]" + prompt.promptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
 	}
 
-	// TODO implement timeout
+	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
 		// Only print the response here; GenerateResponse has a number of other
@@ -77,10 +117,10 @@ func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, inputForPrompt str
 	return response, nil
 }
 
-func askAI(client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
+func askAI(client *api.Client, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: string(Llama3),
+		Model: model.String(),
 		Prompt: "My name is Ctrl+Revise and I am an AI agent running on a personal computer that doesn't require internet access," +
 			"Provide information or answers for the following questions based on my training data. " +
 			"If I'm unsure or don't have enough information, please indicate this clearly." +
@@ -91,7 +131,7 @@ func askAI(client *api.Client, inputForPrompt string) (api.GenerateResponse, err
 		Stream: new(bool),
 	}
 
-	// TODO implement timeout
+	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
 		// Only print the response here; GenerateResponse has a number of other
@@ -114,13 +154,13 @@ func reGenerateResponseFromOllama(client *api.Client, msgContext []int, prompt P
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model:  string(Llama3),
-		Prompt: prompt.toText(),
+		Prompt: prompt.promptToText(),
 		// set streaming to false
 		Stream:  new(bool),
 		Context: msgContext,
 	}
 
-	// TODO implement timeout
+	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
 		// Only print the response here; GenerateResponse has a number of other
@@ -136,4 +176,56 @@ func reGenerateResponseFromOllama(client *api.Client, msgContext []int, prompt P
 	}
 
 	return response, nil
+}
+
+func pullModel(model ModelName, update bool) error {
+	ctx := context.Background()
+	req := &api.PullRequest{
+		Model: model.String(),
+	}
+
+	slog.Info("Pulling model", "model", model.String())
+	found, err := findModel(ctx, model)
+	if err != nil {
+		return err
+	}
+	if found && !update {
+		slog.Info("Model already exists", "model", model)
+		return nil
+	}
+
+	progressFunc := func(resp api.ProgressResponse) error {
+		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
+		if resp.Total == resp.Completed {
+			guiApp.SendNotification(&fyne.Notification{
+				Title:   "Model Download Completed",
+				Content: "Model " + model.String() + " has been pulled",
+			})
+		}
+		return nil
+	}
+
+	err = ollamaClient.Pull(ctx, req, progressFunc)
+	if err != nil {
+		slog.Error("Failed to pull model", "error", err)
+		return err
+	}
+	return nil
+}
+
+func findModel(ctx context.Context, model ModelName) (bool, error) {
+	response, err := ollamaClient.List(ctx)
+	if err != nil {
+		slog.Error("Failed to pull model", "error", err)
+		return false, err
+	}
+	for m := range response.Models {
+		slog.Debug("Docker Image", "Name", response.Models[m], "Model", response.Models[m].Model,
+			"ParameterSize", response.Models[m].Details.ParameterSize, "Families", response.Models[m].Details.Families)
+		if response.Models[m].Name == model.String() {
+			slog.Debug("Model found", "model", response.Models[m].Model)
+			return true, nil
+		}
+	}
+	return false, nil
 }

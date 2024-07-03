@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Ctrl+Revise
+Exec=ctrl_plus_revise
+Type=Application
+Icon=com.bahelit.ctrl_plus_revise.png
+Categories=Office;Dictionary;
+Comment=AI in any text editor
+Terminal=false

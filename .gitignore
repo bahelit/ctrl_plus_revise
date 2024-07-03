@@ -16,12 +16,13 @@ bin/
 dist-ssr/
 dist/
 pb_data/
+.flatpak-builder
 
 # Node modules.
 node_modules/
 
 # Vendor folders.
-#vendor/ Flatpak needs this folder to be present in the repo.
+vendor/
 
 # Temp folders.
 .parcel-cache/

@@ -8,7 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
+	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -18,8 +18,8 @@ const (
 	ollamaTagRocm       = "ollama/ollama:rocm"
 )
 
-func connectToDocker() (*client.Client, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func connectToDocker() (*docker.Client, error) {
+	cli, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
 	if err != nil {
 		slog.Error("Failed to create docker client", "error", err)
 		return nil, err
@@ -27,7 +27,7 @@ func connectToDocker() (*client.Client, error) {
 	return cli, nil
 }
 
-func findContainer(cli *client.Client) (containerID string, containerIsRunning bool, err error) {
+func findContainer(cli *docker.Client) (containerID string, containerIsRunning bool, err error) {
 	ctx := context.Background()
 	containerIsRunning = false
 
@@ -54,7 +54,7 @@ func findContainer(cli *client.Client) (containerID string, containerIsRunning b
 	return "", containerIsRunning, nil
 }
 
-func checkForOllamaImage(cli *client.Client) (string, error) {
+func checkForOllamaImage(cli *docker.Client) (string, error) {
 	ctx := context.Background()
 
 	images, err := cli.ImageList(ctx, image.ListOptions{})
@@ -74,7 +74,7 @@ func checkForOllamaImage(cli *client.Client) (string, error) {
 	return "", nil
 }
 
-func removeContainerImage(cli *client.Client, id string) {
+func removeContainerImage(cli *docker.Client, id string) {
 	ctx := context.Background()
 
 	resp, err := cli.ImageRemove(ctx, id, image.RemoveOptions{})
@@ -86,7 +86,7 @@ func removeContainerImage(cli *client.Client, id string) {
 	slog.Info("Removed Ollama image", "id", id, "response", resp)
 }
 
-func pullOllamaImage(cli *client.Client) error {
+func pullOllamaImage(cli *docker.Client) error {
 	ctx := context.Background()
 
 	// TODO: Allow user to specify image AMD or Nvidia images
@@ -109,7 +109,7 @@ func pullOllamaImage(cli *client.Client) error {
 	return nil
 }
 
-func updateOllamaImage(cli *client.Client) error {
+func updateOllamaImage(cli *docker.Client) error {
 	imageID, err := checkForOllamaImage(cli)
 	if err != nil {
 		slog.Error("Failed to check for image", "error", err)
@@ -125,19 +125,33 @@ func updateOllamaImage(cli *client.Client) error {
 
 }
 
-func stopOllamaContainer(cli *client.Client, id string) {
+func stopOllamaContainer(cli *docker.Client) {
 	ctx := context.Background()
 
-	err := cli.ContainerStop(ctx, id, container.StopOptions{})
+	containerID, running, err := findContainer(cli)
+	if err != nil {
+		slog.Error("Problem talking to docker")
+		return
+	}
+	if containerID == "" {
+		slog.Warn("Ollama container not found!")
+		return
+	}
+	if !running {
+		slog.Info("Ollama container is already stopped")
+		return
+	}
+
+	err = cli.ContainerStop(ctx, containerID, container.StopOptions{})
 	if err != nil {
 		slog.Error("Failed to stop container", "error", err)
 		return
 	}
 
-	slog.Info("Stopped Ollama container", "id", id)
+	slog.Info("Stopped Ollama container", "id", containerID)
 }
 
-func startOllamaExistingContainer(cli *client.Client, id string) error {
+func startOllamaExistingContainer(cli *docker.Client, id string) error {
 	ctx := context.Background()
 
 	err := cli.ContainerStart(ctx, id, container.StartOptions{})
@@ -152,7 +166,7 @@ func startOllamaExistingContainer(cli *client.Client, id string) error {
 
 // startOllamaFirstTime starts the Ollama container
 // cmd: docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
-func startOllamaFirstTime(cli *client.Client) error {
+func startOllamaFirstTime(cli *docker.Client) error {
 	ctx := context.Background()
 	var (
 		devices      []container.DeviceMapping
@@ -212,7 +226,7 @@ func startOllamaFirstTime(cli *client.Client) error {
 	return nil
 }
 
-func startOllamaContainer(cli *client.Client) (string, error) {
+func startOllamaContainer(cli *docker.Client) (string, error) {
 	containerID, running, err := findContainer(cli)
 	if err != nil {
 		slog.Error("Problem talking to docker")

@@ -4,124 +4,253 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/theme"
-	"github.com/docker/docker/client"
-	"github.com/ollama/ollama/api"
-	"golang.design/x/clipboard"
+	docker "github.com/docker/docker/client"
+	htgotts "github.com/hegedustibor/htgo-tts"
+	"github.com/hegedustibor/htgo-tts/handlers"
+	"github.com/hegedustibor/htgo-tts/voices"
+	ollama "github.com/ollama/ollama/api"
+
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
+	dirSize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
+	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
+// TODO: Refactor to remove some global variables
 var (
-	ollamaClient            *api.Client
-	selectedPrompt          PromptMsg = CorrectGrammar
-	selectedPromptBinding   binding.String
-	guiApp                  fyne.App
-	containerID             string
-	stopContainerOnShutDown bool = false
+	dockerClient          *docker.Client
+	ollamaClient          *ollama.Client
+	selectedModel         = Llama3
+	selectedPrompt        = CorrectGrammar
+	selectedModelBinding  binding.Int
+	selectedPromptBinding binding.String
+	guiApp                fyne.App
+	containerID           string
+	ollamaPID             int
+	speech                htgotts.Speech
+	stopOllamaOnShutDown  = false
 )
 
 func main() {
-	// Start the clipboard listener.
-	err := clipboard.Init()
-	if err != nil {
-		slog.Error("Failed to start clipboard listener!", "details", err.Error())
-		os.Exit(1)
-	}
-	selectedPromptBinding = binding.NewString()
-	err = selectedPromptBinding.Set(CorrectGrammar.String())
-	if err != nil {
-		slog.Error("Failed to set selectedPromptBinding", "error", err)
-	}
-
-	// Start the services.
-	cli := setupServices()
-	if cli == nil {
-		os.Exit(1)
-	}
-
-	// Start the GUI event loop and system tray.
-	slog.Info("Starting ctrl_plus_revise GUI Service...", "version", Version)
-	icon, err := fyne.LoadResourceFromPath("images/icon_small.png")
-	if err != nil {
-		slog.Warn("Failed to load icon", "error", err)
-	}
-	guiApp = app.NewWithID("Ctrl+Revise")
-	guiApp.SetIcon(icon)
+	slog.Info("Starting Ctr+Revise GUI Service...", "Version", version.Version, "Compiler", runtime.Version())
+	guiApp = app.NewWithID("com.bahelit.ctrl_plus_revise")
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
-	// Prepare the system tray
+
+	// Prepare the loading screen and system tray
+	loadIcon()
+	startupWindow := loadingScreen()
 	sysTray := setupSysTray(guiApp)
-	if guiApp.Preferences().BoolWithFallback(showStartWindow, true) {
-		slog.Info("Hiding start window")
+	if guiApp.Preferences().BoolWithFallback(showStartWindowKey, true) {
+		slog.Debug("Hiding start window")
 		sysTray.Show()
+		startupWindow.Show()
 	}
-	sysTray.SetCloseIntercept(func() {
-		sysTray.Hide()
-	})
+
+	// Start the services
+	detectProcessingDevice()
+	detectMemory()
+	go func() {
+		connectedToOllama := setupServices()
+		if !connectedToOllama {
+			os.Exit(1)
+		}
+		fetchModel()
+		startupWindow.Close()
+	}()
+
+	// Say hello
+	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakResponse {
+		go func() {
+			prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+			_ = speech.Speak("")
+			speakErr := speech.Speak("Control Plus Revise is set to: " + prompt)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
+		}()
+	}
 
 	// Listen for global hotkeys
 	go registerHotkeys(sysTray)
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
+	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func(d *docker.Client, p int) {
 		<-c
 		slog.Info("Received shutdown signal")
-		stopContainerOnShutDown = guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDown, false)
-		if stopContainerOnShutDown {
-			slog.Info("Stopping Ollama container")
-			stopOllamaContainer(cli, containerID)
-		} else {
-			slog.Info("Leaving Ollama container running")
-		}
+		handleShutdown(d, p)
 		os.Exit(0)
-	}()
+	}(dockerClient, ollamaPID)
+	defer func(d *docker.Client, p int) {
+		slog.Info("Shutting down")
+		signal.Stop(c)
+		close(c)
+		handleShutdown(d, p)
+	}(dockerClient, ollamaPID)
 
-	// Run the GUI event loop.
+	// Run the GUI event loop
 	guiApp.Run()
 }
 
-func setupServices() *client.Client {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func loadingScreen() fyne.Window {
+	startupWindow := guiApp.NewWindow("Starting Control+Revise")
+	infinite := widget.NewProgressBarInfinite()
+	text := widget.NewLabel("Starting AI services in the background")
+	startupWindow.SetContent(container.NewVBox(text, infinite))
+	return startupWindow
+}
 
-	// Connect to Docker
-	cli, err := connectToDocker()
+func fetchModel() {
+	// Pull the model on startup, will pull updated model if available
+	model := ModelName(guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3)))
+	err := pullModel(model, false)
 	if err != nil {
-		return nil
+		slog.Error("Failed to pull model", "error", err)
+		guiApp.SendNotification(&fyne.Notification{
+			Title: "Ollama Error",
+			Content: "Failed to connect to pull model from Ollama\n" +
+				"Check logs for more information\n" +
+				"Ctrl+Revise will continue running, but may not function correctly",
+		})
 	}
-	ping, err := cli.Ping(ctx)
+}
+
+func handleShutdown(d *docker.Client, p int) {
+	stopOllamaOnShutDown = guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDownKey, true)
+	useDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, true)
+	if stopOllamaOnShutDown {
+		if useDocker {
+			if d != nil {
+				stopOllamaContainer(d)
+			}
+		} else {
+			if p != 0 {
+				stopOllama(p)
+			}
+		}
+	} else {
+		slog.Info("Leaving Ollama container running")
+	}
+}
+
+func setupServices() bool {
+	connectedToOllama := false
+	var err error
+	// Start the speech handler
+	speech = htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+	// TODO: the audio files need to be cleaned up periodically.
+	dirInfo, _ := dirSize.GetDirInfo(os.DirFS("audio"))
+	slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
+
+	useDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, false)
+	if useDocker {
+		dockerClient, err = connectToDocker()
+		if err != nil {
+			slog.Error("Failed to connect to Docker", "error", err)
+		}
+	}
+
+	heartBeatCtx, heartBeatCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer heartBeatCancel()
+	// Start communication with the AI
+	ollamaClient = connectToOllama()
+	err = ollamaClient.Heartbeat(heartBeatCtx)
+	if err == nil {
+		slog.Info("Connected to Ollama")
+		connectedToOllama = true
+		return connectedToOllama
+	} else {
+		slog.Error("Ollama doesn't appear to be running", "error", err)
+		heartBeatCancel()
+	}
+	if <-heartBeatCtx.Done(); true {
+		slog.Error("Ollama heartbeat timed out")
+	}
+
+	if useDocker {
+		slog.Info("Starting Ollama container")
+		return setupDocker()
+	}
+	slog.Info("Starting Ollama")
+
+	// Start Ollama locally
+	versionCMD := exec.Command("ollama", "--version")
+	err = versionCMD.Run()
+	if err != nil {
+		slog.Error("Can't find Ollama", "error", err)
+		return connectedToOllama
+	}
+	ollamaServe := exec.Command("ollama", "serve")
+	err = ollamaServe.Start()
+	if err != nil {
+		return connectedToOllama
+	}
+	time.Sleep(6 * time.Second)
+	go func() {
+		err = ollamaServe.Wait()
+		slog.Info("Ollama process exited", "error", err)
+	}()
+	ollamaPID = ollamaServe.Process.Pid
+	slog.Info("Started Ollama", "pid", ollamaPID)
+
+	ollamaClient = connectToOllama()
+	connectedToOllama = true
+	return connectedToOllama
+}
+
+func setupDocker() (connectedToOllama bool) {
+	connectedToOllama = false
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer pingCancel()
+	ping, err := dockerClient.Ping(pingCtx)
 	if err != nil {
 		slog.Error("Failed to connect to Docker", "error", err)
-		return nil
+		pingCancel()
+		return connectedToOllama
+	}
+	if <-pingCtx.Done(); true {
+		slog.Error("Timed out trying to connect to Docker")
 	}
 	slog.Info("Connected to Docker", "Operating_System", ping.OSType)
 
-	// Start communication with the AI
-	connectToOllama()
-	err = ollamaClient.Heartbeat(ctx)
-	if err == nil {
-		slog.Info("Connected to Ollama")
-		return cli
-	}
-	if <-ctx.Done(); true {
-		slog.Info("Failed to connect to Ollama, starting docker container", "error", err)
-	}
-
-	// TODO: Support native Ollama without Docker
 	// If we made it hear we can talk to docker but don't have a connection to Ollama
 	slog.Info("Starting Ollama container")
 	// Check Docker containers
-	containerID, err = startOllamaContainer(cli)
+	containerID, err = startOllamaContainer(dockerClient)
 	if err != nil {
-		return nil
+		return connectedToOllama
 	}
+	if containerID != "" {
+		connectedToOllama = true
+		return connectedToOllama
+	}
+	return connectedToOllama
+}
 
-	return cli
+func stopOllama(p int) {
+	if p == 0 {
+		slog.Error("Ollama PID not found")
+		return
+	}
+	err := syscall.Kill(p, syscall.SIGTERM)
+	if err != nil {
+		slog.Error("Failed to stop Ollama", "error", err)
+	} else {
+		return
+	}
+	// If the above fails, try a more forceful kill
+	_ = syscall.Kill(p, syscall.SIGKILL)
 }

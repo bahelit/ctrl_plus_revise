@@ -4,16 +4,16 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/ollama/ollama/api"
+	ollama "github.com/ollama/ollama/api"
 )
 
-func connectToOllama() {
-	var err error
-	ollamaClient, err = api.ClientFromEnvironment()
+func connectToOllama() *ollama.Client {
+	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
 		slog.Error("Failed to create client", "error", err)
 		os.Exit(1) // For now...
 	}
+	return client
 }
 
 func startUpOllamaNative() {

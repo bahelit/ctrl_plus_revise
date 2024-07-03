@@ -2,26 +2,45 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/x/fyne/layout"
-	//"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"log/slog"
+	"fyne.io/x/fyne/layout"
+
+	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
 const (
-	replaceHighlightedText = "replaceHighlightedText"
-	showStartWindow        = "showStartWindow"
-	stopOllamaOnShutDown   = "stopOllamaOnShutDown"
+	replaceHighlightedText  = "replaceHighlightedText"
+	speakAIResponseKey      = "showStartWindow"
+	showStartWindowKey      = "showStartWindow"
+	firstRunKey             = "firstRun"
+	currentPromptKey        = "lastPrompt"
+	currentModelKey         = "lastModel"
+	stopOllamaOnShutDownKey = "stopOllamaOnShutDown"
+	useDockerKey            = "useDocker"
+)
+
+var (
+	aiActionDropdown *widget.Select
+	aiModelDropdown  *widget.Select
 )
 
 func setupSysTray(guiApp fyne.App) fyne.Window {
+	err := setBindingVariables()
+	if err != nil {
+		slog.Error("Failed to set binding variables", "error", err)
+		os.Exit(1)
+	}
+
 	sysTray := guiApp.NewWindow("Ctrl+Revise AI Text Generator")
 	sysTray.SetTitle("Ctrl+Revise AI Text Generator")
 
-	combo := &widget.Select{}
 	// System tray menu
 	if desk, ok := guiApp.(desktop.App); ok {
 		m := fyne.NewMenu("Ctrl+Revise",
@@ -29,7 +48,6 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 				askQuestion(guiApp)
 			}),
 			fyne.NewMenuItem("Settings Window", func() {
-				combo.SetSelected(selectedPrompt.String())
 				sysTray.Show()
 			}),
 			fyne.NewMenuItem("Keyboard Shortcuts", func() {
@@ -46,7 +64,9 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	// System tray window content
 	startUpCheckBox := showOnStartUpCheckBox(guiApp)
 	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
-	stopOllamaCheckBox := stopOllamaOnShutdownCheckBox(guiApp)
+	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
+	useDockerTextCheckBox := useDockerCheckBox(guiApp)
+	//stopOllamaCheckBox := stopOllamaOnShutdownCheckBox(guiApp)
 	welcomeText := mainWindowText()
 	hideWindowButton := widget.NewButton("Hide This Window", func() {
 		sysTray.Hide()
@@ -57,29 +77,56 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
 		askQuestion(guiApp)
 	})
+
+	checkboxLayout := container.NewAdaptiveGrid(2,
+		layout.Responsive(speakAIResponseTextCheckBox),
+		layout.Responsive(replaceHighlightedTextCheckBox),
+		layout.Responsive(useDockerTextCheckBox),
+		layout.Responsive(startUpCheckBox))
+
 	mainWindow := container.NewVBox(
 		welcomeText,
 		askQuestionsButton,
 		keyboardShortcutsButton,
 		hideWindowButton,
-		replaceHighlightedTextCheckBox,
-		startUpCheckBox,
-		stopOllamaCheckBox)
+		checkboxLayout)
 
 	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
-	chooseActionLabel.Alignment = fyne.TextAlignCenter
-	combo = defaultCopyActionDropDown()
+	chooseActionLabel.Alignment = fyne.TextAlignTrailing
+	aiActionDropdown = selectCopyActionDropDown()
 
-	dropDownMenu := container.NewVBox(
+	chooseModelLabel := widget.NewLabel("Choose which AI should respond to the highlighted text:")
+	chooseModelLabel.Alignment = fyne.TextAlignTrailing
+	aiModelDropdown = selectAIModelDropDown()
+
+	dropDownMenu := container.NewAdaptiveGrid(2,
 		chooseActionLabel,
-		combo)
+		aiActionDropdown,
+		chooseModelLabel,
+		aiModelDropdown)
 	sysTray.SetContent(container.NewVBox(mainWindow, dropDownMenu))
 
 	sysTray.SetCloseIntercept(func() {
 		sysTray.Hide()
 	})
-
 	return sysTray
+}
+
+func loadIcon() {
+	var (
+		icon         fyne.Resource
+		errLocation1 error
+		errLocation2 error
+	)
+	icon, errLocation1 = fyne.LoadResourceFromPath("/app/share/icons/hicolor/256x256/apps/com.bahelit.ctrl_plus_revise.png")
+	if errLocation1 != nil {
+		icon, errLocation2 = fyne.LoadResourceFromPath("images/icon.png")
+		if errLocation2 != nil {
+			slog.Warn("Failed to load icon", "error", errLocation1)
+			slog.Warn("Failed to load icon", "error", errLocation2)
+		}
+	}
+	guiApp.SetIcon(icon)
 }
 
 func mainWindowText() *fyne.Container {
@@ -95,14 +142,14 @@ func mainWindowText() *fyne.Container {
 }
 
 func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
-	openStartWindow := guiApp.Preferences().BoolWithFallback(showStartWindow, true)
+	openStartWindow := guiApp.Preferences().BoolWithFallback(showStartWindowKey, true)
 	startUpCheck := widget.NewCheck("Show this window on startup", func(b bool) {
 		if b == false {
-			slog.Info("Hiding start window")
-			guiApp.Preferences().SetBool(showStartWindow, false)
+			slog.Debug("Hiding start window")
+			guiApp.Preferences().SetBool(showStartWindowKey, false)
 		} else if b == true {
-			guiApp.Preferences().SetBool(showStartWindow, true)
-			slog.Info("Showing start window")
+			guiApp.Preferences().SetBool(showStartWindowKey, true)
+			slog.Debug("Showing start window")
 		}
 	})
 	startUpCheck.Checked = openStartWindow
@@ -111,38 +158,147 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 
 func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
 	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
 	runOnCopy := widget.NewCheck("Replace highlighted text with AI response", func(b bool) {
 		if b == false {
-			slog.Info("Replace highlighted checkbox is off")
+			slog.Debug("Replace highlighted checkbox is off")
 			guiApp.Preferences().SetBool(replaceHighlightedText, false)
+			if speakAIResponse {
+				go func() {
+					speakErr := speech.Speak("Highlighted text will be appended with an AI response.")
+					if speakErr != nil {
+						slog.Error("Failed to speak", "error", speakErr)
+					}
+				}()
+			}
 		} else if b == true {
-			slog.Info("Replace highlighted checkbox is on")
+			slog.Debug("Replace highlighted checkbox is on")
 			guiApp.Preferences().SetBool(replaceHighlightedText, true)
+			if speakAIResponse {
+				go func() {
+					speakErr := speech.Speak("Highlighted text will be replaced with AI response.")
+					if speakErr != nil {
+						slog.Error("Failed to speak", "error", speakErr)
+					}
+				}()
+			}
 		}
 	})
 	runOnCopy.Checked = replaceText
 	return runOnCopy
 }
 
-func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
-	stopOllama := guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDown, false)
-	startUpCheck := widget.NewCheck("Stop AI agent on Program Exit", func(b bool) {
+func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakAI := widget.NewCheck("Speak AI through speakers", func(b bool) {
 		if b == false {
-			slog.Info("Hiding start window")
-			guiApp.Preferences().SetBool(stopOllamaOnShutDown, false)
+			slog.Debug("Turning off Speech mode")
+			guiApp.Preferences().SetBool(speakAIResponseKey, false)
+			go func() {
+				speakErr := speech.Speak("Turning off Speech mode.")
+				if speakErr != nil {
+					slog.Error("Failed to speak", "error", speakErr)
+				}
+			}()
 		} else if b == true {
-			guiApp.Preferences().SetBool(stopOllamaOnShutDown, true)
-			slog.Info("Showing start window")
+			slog.Debug("Turning on Speech mode")
+			guiApp.Preferences().SetBool(speakAIResponseKey, true)
+			go func() {
+				speakErr := speech.Speak("Turning on Speech mode.")
+				if speakErr != nil {
+					slog.Error("Failed to speak", "error", speakErr)
+				}
+			}()
 		}
 	})
-	startUpCheck.Checked = stopOllama
+	speakAI.Checked = speakAIResponse
+	return speakAI
+}
+
+func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
+	stop := guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDownKey, true)
+	startUpCheck := widget.NewCheck("Stop AI on program exit", func(b bool) {
+		if b == false {
+			slog.Debug("Stopping Ollama on shutdown")
+			guiApp.Preferences().SetBool(stopOllamaOnShutDownKey, false)
+		} else if b == true {
+			guiApp.Preferences().SetBool(stopOllamaOnShutDownKey, true)
+			slog.Debug("Leaving Ollama running on shutdown")
+		}
+	})
+	startUpCheck.Checked = stop
 	return startUpCheck
 }
 
-func defaultCopyActionDropDown() *widget.Select {
+func useDockerCheckBox(guiApp fyne.App) *widget.Check {
+	userDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, false)
+	userDockerCheck := widget.NewCheck("Run AI in Docker", func(b bool) {
+		if b == false {
+			slog.Debug("Not using Docker")
+			guiApp.Preferences().SetBool(useDockerKey, false)
+			stopOllamaContainer(dockerClient)
+			gotConnected := setupServices()
+			if !gotConnected {
+				go func() {
+					gotConnected := setupServices()
+					if !gotConnected {
+						slog.Error("Failed to connect to or start Ollama container")
+						guiApp.SendNotification(&fyne.Notification{
+							Title: "Docker Error",
+							Content: "Failed to connect to start Ollama container\n" +
+								"Check logs for more information\n" +
+								"Ctrl+Revise will shutdown now",
+						})
+						os.Exit(1)
+					} else {
+						guiApp.SendNotification(&fyne.Notification{
+							Title:   "Connected Docker",
+							Content: "Ready to process requests with Docker!",
+						})
+					}
+				}()
+			}
+		} else if b == true {
+			slog.Debug("Using Docker")
+			guiApp.Preferences().SetBool(useDockerKey, true)
+			go func() {
+				stopOllama(ollamaPID)
+				gotConnected := setupServices()
+				if !gotConnected {
+					slog.Error("Failed to connect to Docker or start Ollama container")
+					guiApp.SendNotification(&fyne.Notification{
+						Title: "Docker Error",
+						Content: "Failed to connect to Docker or start Ollama container\n" +
+							"Please check your Docker installation and try again\n" +
+							"Check logs for more information\n" +
+							"Ctrl+Revise will continue to run without Docker",
+					})
+					guiApp.Preferences().SetBool(useDockerKey, false)
+					// TODO restart ollama without docker
+				} else {
+					guiApp.SendNotification(&fyne.Notification{
+						Title:   "Connected Docker",
+						Content: "Ready to process requests with Docker!",
+					})
+				}
+			}()
+		}
+	})
+	userDockerCheck.Checked = userDocker
+	return userDockerCheck
+}
+
+func selectCopyActionDropDown() *widget.Select {
 	// FIXME - Not updating when the selection is changed with keyboard shortcut
-	combo := widget.NewSelect([]string{CorrectGrammar.String(), MakeItProfessional.String(), MakeItFriendly.String(),
-		MakeHeadline.String(), MakeASummary.String(), MakeExpanded.String(), MakeExplanation.String(), MakeItAList.String()},
+	combo := widget.NewSelect([]string{
+		CorrectGrammar.String(),
+		MakeItProfessional.String(),
+		MakeItFriendly.String(),
+		MakeHeadline.String(),
+		MakeASummary.String(),
+		MakeExpanded.String(),
+		MakeExplanation.String(),
+		MakeItAList.String()},
 		func(value string) {
 			switch value {
 			case CorrectGrammar.String():
@@ -165,22 +321,64 @@ func defaultCopyActionDropDown() *widget.Select {
 				slog.Error("Invalid selection", "value", value)
 				selectedPrompt = CorrectGrammar
 			}
+			guiApp.Preferences().SetString(currentPromptKey, selectedPrompt.String())
 			err := selectedPromptBinding.Set(selectedPrompt.String())
 			if err != nil {
 				slog.Error("Failed to set selectedPromptBinding", "error", err)
 			}
 		})
-	combo.SetSelected(selectedPrompt.String())
+	prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+	combo.SetSelected(prompt)
+
+	return combo
+}
+func selectAIModelDropDown() *widget.Select {
+	// FIXME - Not updating when the selection is changed with keyboard shortcut
+	combo := widget.NewSelect([]string{
+		BashBot.String(),
+		CodeLlama.String(),
+		CodeLlama13b.String(),
+		Gemma.String(),
+		Llama3.String()},
+		func(value string) {
+			switch value {
+			case BashBot.String():
+				selectedModel = BashBot
+			case CodeLlama.String():
+				selectedModel = CodeLlama
+			case CodeLlama13b.String():
+				selectedModel = CodeLlama13b
+			case Gemma.String():
+				selectedModel = Gemma
+			case Llama3.String():
+				selectedModel = Llama3
+			default:
+				slog.Error("Invalid selection", "value", value)
+				selectedModel = Llama3
+			}
+			guiApp.Preferences().SetInt(currentModelKey, int(selectedModel))
+			err := selectedModelBinding.Set(int(selectedModel))
+			if err != nil {
+				slog.Error("Failed to set selectedModelBinding", "error", err)
+			}
+		})
+	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
+	combo.SetSelected(ModelName(model).String())
 
 	return combo
 }
 
+func updateDropDownMenus() {
+	aiActionDropdown.SetSelected(selectedPrompt.String())
+	aiModelDropdown.SetSelected(selectedModel.String())
+}
+
 func showAbout(guiApp fyne.App) {
-	slog.Info("Showing about")
+	slog.Debug("Showing about")
 	about := guiApp.NewWindow("About Ctrl+Revise!")
 
 	label1 := widget.NewLabel("Version")
-	value1 := widget.NewLabel(Version)
+	value1 := widget.NewLabel(version.Version)
 	value1.TextStyle = fyne.TextStyle{Bold: true}
 	label2 := widget.NewLabel("Author/Maintainer")
 	value2 := widget.NewLabel("Michael Salmons")
@@ -208,24 +406,36 @@ func showAbout(guiApp fyne.App) {
 }
 
 func showShortcuts(guiApp fyne.App) {
-	slog.Info("Showing Shortcuts")
+	slog.Debug("Showing Shortcuts")
 	shortCuts := guiApp.NewWindow("Ctrl+Revise Shortcuts")
+
+	var grid *fyne.Container
 
 	label1 := widget.NewLabel("Ask a Question with highlighted text")
 	value1 := widget.NewLabel("Alt + Ctrl + A")
 	value1.TextStyle = fyne.TextStyle{Bold: true}
+
 	label2 := widget.NewLabel("Replace highlighted text with: ")
 	label2Binding := widget.NewLabelWithData(selectedPromptBinding)
 	value2 := widget.NewLabel("Ctrl + Shift + C")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	hbox := container.NewHBox(label2, label2Binding)
-	grid := layout.NewResponsiveLayout(label1, value1, hbox, value2)
+
+	label3 := widget.NewLabel("Read the highlighted text")
+	value3 := widget.NewLabel("Alt + Ctrl + R")
+	value3.TextStyle = fyne.TextStyle{Bold: true}
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakAIResponse {
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3)
+	} else {
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2)
+	}
 	shortCuts.SetContent(grid)
 	shortCuts.Show()
 }
 
 func askQuestion(guiApp fyne.App) {
-	slog.Info("Asking Question")
+	slog.Debug("Asking Question")
 	var (
 		screenHeight float32 = 180.0
 		screenWidth  float32 = 480.0
@@ -242,13 +452,13 @@ func askQuestion(guiApp fyne.App) {
 	text.PlaceHolder = "Ask your question here, remember this is an AI and important\n" +
 		"questions should be verified with other sources."
 	text.OnSubmitted = func(s string) {
-		slog.Info("Question submitted - keyboard shortcut", "text", s)
+		slog.Debug("Question submitted - keyboard shortcut", "text", s)
 		err := text.Validate()
 		if err != nil {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		response, err := askAI(ollamaClient, s)
+		response, err := askAI(ollamaClient, selectedModel, s)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 		}
@@ -266,13 +476,13 @@ func askQuestion(guiApp fyne.App) {
 	}
 
 	submitQuestionsButton := widget.NewButton("Submit Question", func() {
-		slog.Info("Question submitted", "text", text.Text)
+		slog.Debug("Question submitted", "text", text.Text)
 		err := text.Validate()
 		if err != nil {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		response, err := askAI(ollamaClient, text.Text)
+		response, err := askAI(ollamaClient, selectedModel, text.Text)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 		}
@@ -294,8 +504,26 @@ func askQuestion(guiApp fyne.App) {
 }
 
 func changedPromptNotification() {
+	guiApp.Preferences().SetString(currentPromptKey, selectedPrompt.String())
 	guiApp.SendNotification(&fyne.Notification{
 		Title:   "AI Action Changed",
 		Content: "AI Action has been changed to:\n" + selectedPrompt.String(),
 	})
+}
+
+func setBindingVariables() error {
+	selectedModelBinding = binding.NewInt()
+	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
+	err := selectedModelBinding.Set(model)
+	if err != nil {
+		slog.Error("Failed to set selectedModelBinding", "error", err)
+	}
+
+	selectedPromptBinding = binding.NewString()
+	prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+	err = selectedPromptBinding.Set(prompt)
+	if err != nil {
+		slog.Error("Failed to set selectedPromptBinding", "error", err)
+	}
+	return err
 }
