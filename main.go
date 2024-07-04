@@ -66,6 +66,7 @@ func main() {
 			os.Exit(1)
 		}
 		fetchModel()
+		time.Sleep(2 * time.Second)
 		startupWindow.Close()
 	}()
 
@@ -151,6 +152,7 @@ func setupServices() bool {
 	var err error
 	// Start the speech handler
 	speech = htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+	guiApp.Preferences().SetBool(speakAIResponseKey, false)
 	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
 	if speakResponse {
 		// TODO: the audio files need to be cleaned up periodically.

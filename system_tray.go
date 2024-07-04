@@ -17,7 +17,7 @@ import (
 
 const (
 	replaceHighlightedText  = "replaceHighlightedText"
-	speakAIResponseKey      = "showStartWindow"
+	speakAIResponseKey      = "speakAIResponseKey"
 	showStartWindowKey      = "showStartWindow"
 	firstRunKey             = "firstRun"
 	currentPromptKey        = "lastPrompt"
@@ -417,7 +417,7 @@ func showShortcuts(guiApp fyne.App) {
 
 	label2 := widget.NewLabel("Replace highlighted text with: ")
 	label2Binding := widget.NewLabelWithData(selectedPromptBinding)
-	value2 := widget.NewLabel("Ctrl + Shift + C")
+	value2 := widget.NewLabel("Alt + Ctrl + C")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	hbox := container.NewHBox(label2, label2Binding)
 
