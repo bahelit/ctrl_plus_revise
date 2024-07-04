@@ -96,13 +96,13 @@ func registerHotkeys(sysTray fyne.Window) {
 				slog.Debug("Ctrl-Alt-R has been pressed")
 				time.Sleep(500 * time.Millisecond)
 				hitCrl, hitAlt, hitR = false, false, false
-				handleCyclePromptKeyPressed()
+				handleReadTextPressed(sysTray)
 			}
 			if hitCrl && hitAlt && hitTab {
 				slog.Debug("Ctrl-Alt-TAB has been pressed")
 				time.Sleep(500 * time.Millisecond)
 				hitCrl, hitAlt, hitTab = false, false, false
-				handleReadTextPressed(sysTray)
+				handleCyclePromptKeyPressed()
 			}
 			break
 		}

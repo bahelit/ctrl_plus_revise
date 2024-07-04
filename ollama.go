@@ -184,13 +184,13 @@ func pullModel(model ModelName, update bool) error {
 		Model: model.String(),
 	}
 
-	slog.Info("Pulling model", "model", model.String())
+	slog.Debug("Pulling model", "model", model.String())
 	found, err := findModel(ctx, model)
 	if err != nil {
 		return err
 	}
 	if found && !update {
-		slog.Info("Model already exists", "model", model)
+		slog.Info("AI model loaded", "model", model)
 		return nil
 	}
 
