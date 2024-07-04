@@ -27,7 +27,6 @@ const (
 
 	MakeItAList        // Make it a List
 	MakeItFriendly     // Make it Friendly
-	MakeItFriendlyRedo // Make it Friendly
 	MakeItProfessional // Make it Professional
 	MakeASummary       // Make a Summary
 	MakeExplanation    // Explain it like I'm 5
@@ -46,9 +45,6 @@ var promptToText = map[PromptMsg]promptText{
 		promptExtra: " Return the corrected text without explaining what changed, just provide the corrected text"},
 	MakeItFriendly: {
 		prompt:      "Give the following text a friendly makeover by injecting a touch of humor, warmth, and approachability: ",
-		promptExtra: " You don't have to explain your changes, just make the text more friendly"},
-	MakeItFriendlyRedo: {
-		prompt:      "Act as a writer. Give the previous text a friendly makeover by injecting a touch of humor, warmth, and approachability. ",
 		promptExtra: " You don't have to explain your changes, just make the text more friendly"},
 	MakeItAList: {
 		prompt:      "Read the following text and create a bulleted list summarizing its main points: ",

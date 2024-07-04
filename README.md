@@ -24,14 +24,13 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 
 ## Features
 
-- **Grammar suggestions**: Ctrl+Revise provides real-time grammar suggestions to improve your writing.
-- **Vocabulary enhancements**: Ctrl+Revise suggests alternative words to improve your writing.
-- **Sentence structure improvements**: Ctrl+Revise suggests sentence structure improvements to enhance your writing.
-- **Keyboard shortcuts**: Ctrl+Revise uses keyboard shortcuts to provide real-time suggestions for your writing.
 - **Local AI model**: Ctrl+Revise runs locally on your machine, ensuring your privacy and data security.
+- **Keyboard shortcuts**: Ctrl+Revise uses keyboard shortcuts to provide quick responses without switching focus away to another program.
+- **Grammar suggestions**: Ctrl+Revise provides a grammar correcter to improve your writing.
+- **Vocabulary enhancements**: Ctrl+Revise will come up with alternative words and expand on topics.
+- **Audio feedback**: Ctrl+Revise provides audio feedback for the suggestions made by the AI models.
+- **Screen reader support**: Ctrl+Revise supports reading the highlighted test for the visually impaired users.
 - **Cross-platform compatibility**: Ctrl+Revise is compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
-- **Audio feedback**: Ctrl+Revise provides audio feedback for the suggestions made by the AI model.
-- **Screen reader support**: Ctrl+Revise supports reading the highlighted for visually impaired users.
 
 > [!NOTE]
 > The Speak feature and text reader are disabled by default and can be enabled in the settings.
@@ -71,7 +70,6 @@ Arch Linux users can install Ollama from the official repository.
 | `sudo pacman -S ollama` | `sudo pacman -S ollama-rocm` | `sudo pacman -S ollama-nvidia` |
 
 
-
 To start the project run the following command:
 ```bash
 git clone https://github.com/bahelit/ctrl_plus_revise.git
@@ -89,10 +87,9 @@ To develop the project, you need to have the following tools installed on your m
 This project uses the Fyne Toolkit, learn more about the Fyne Toolkit at [fyne.io](https://fyne.io/).
 
 #### The Stringer tool
-This project uses the stringer tool, this will generate a `<type>_string.go` file with the `PromptMsg` type and its `String()` method. To generate the `string.go` file, use the make recipe `make stringer` or run the following command:
+This project uses the stringer tool, this will generate a `<type>_string.go` file with the data type and its `String()` method. To re-generate the `string.go` files after making code changes, use the following command:
 ```bash
-go install golang.org/x/tools/cmd/stringer@latest
-go generate ./...
+make stringer
 ```
 
 ## Screenshots

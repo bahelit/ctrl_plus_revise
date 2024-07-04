@@ -27,15 +27,6 @@ func clippyPopUp(a fyne.App, input string, generated *api.GenerateResponse) {
 			w.Clipboard().SetContent(generated.Response)
 			w.Close()
 		}),
-		widget.NewButton("Make the text more Friendly", func() {
-			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItFriendlyRedo)
-			if err != nil {
-				slog.Error("Failed to re-generate", "error", err)
-				return
-			}
-			clippyPopUp(a, input, &reGenerated)
-			w.Close()
-		}),
 		widget.NewButton("Make the text a Bulleted List", func() {
 			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItAList)
 			if err != nil {
@@ -84,15 +75,6 @@ func questionPopUp(a fyne.App, question string, generated *api.GenerateResponse)
 	buttons := container.NewPadded(container.NewVBox(
 		widget.NewButton("Copy generated text to Clipboard", func() {
 			w.Clipboard().SetContent(generated.Response)
-			w.Close()
-		}),
-		widget.NewButton("Make the text a Bulleted List", func() {
-			reGenerated, err := reGenerateResponseFromOllama(ollamaClient, generated.Context, MakeItAList)
-			if err != nil {
-				slog.Error("Failed to re-generate", "error", err)
-				return
-			}
-			clippyPopUp(a, question, &reGenerated)
 			w.Close()
 		})))
 
