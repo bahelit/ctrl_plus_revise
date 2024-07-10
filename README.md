@@ -77,6 +77,13 @@ cd ctrl_plus_revise
 go run .
 ```
 
+> [!NOTE]
+> The first time you run the project it will download the required models and may take a few minutes to start.
+> The first request can take a few seconds to respond as the model is loaded into memory.
+
+#### Wayland
+Users running Wayland may experience issues with reading the text out of some applications, it is recommended to use Xorg.
+
 ## Developing
 
 To develop the project, you need to have the following tools installed on your machine:

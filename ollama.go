@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"fyne.io/fyne/v2"
 	"github.com/ollama/ollama/api"
 )
 
@@ -41,7 +40,7 @@ type promptText struct {
 
 var promptToText = map[PromptMsg]promptText{
 	CorrectGrammar: {
-		prompt:      "Act as a writer. Correct the following block of text by fixing all spelling, grammar, punctuation, and capitalization errors. Provide an error-free version of the original text: ",
+		prompt:      "IDENTITY and PURPOSE\nYou are a writing expert. You refine the input text to enhance clarity, coherence, grammar, and style.\n\nSteps\nAnalyze the input text for grammatical errors, stylistic inconsistencies, clarity issues, and coherence.\nApply corrections and improvements directly to the text.\nMaintain the original meaning and intent of the user's text, ensuring that the improvements are made within the context of the input language's grammatical norms and stylistic conventions.\nOUTPUT INSTRUCTIONS\nRefined and improved text that has no grammar mistakes.\nReturn in the same language as the input.\nInclude NO additional commentary or explanation in the response.\nINPUT:", //nolint:lll long line
 		promptExtra: " Return the corrected text without explaining what changed, just provide the corrected text"},
 	MakeItFriendly: {
 		prompt:      "Give the following text a friendly makeover by injecting a touch of humor, warmth, and approachability: ",
@@ -56,8 +55,8 @@ var promptToText = map[PromptMsg]promptText{
 		prompt:      "Act as a writer. Read the following text carefully and create a concise and attention-grabbing headline that summarizes its main idea or key point: ",
 		promptExtra: " Your headline should be no more than 5-7 words, yet effectively capture the essence of the text. Please submit your headline in the format below:\n\n[Headline]"},
 	MakeASummary: {
-		prompt:      "Act as a writer. Read the following text carefully and create a brief summary that captures the main points and essential information: ",
-		promptExtra: "Your summary should be no more than 150-200 words, yet effectively convey the key ideas and takeaways from the original text. Please submit your summary in a clear and concise format with no explanation."}, //nolint:lll - long line
+		prompt:      "IDENTITY and PURPOSE\nYou are a summarization system that extracts the most interesting, useful, and surprising aspects of an article.\n\nTake a step back and think step by step about how to achieve the best result possible as defined in the steps below. You have a lot of freedom to make this work well.\n\nOUTPUT SECTIONS\nYou extract a summary of the content in 20 words or less, including who is presenting and the content being discussed into a section called SUMMARY.\n\nYou extract the top 20 ideas from the input in a section called IDEAS:.\n\nYou extract the 10 most insightful and interesting quotes from the input into a section called QUOTES:. Use the exact quote text from the input.\n\nYou extract the 20 most insightful and interesting recommendations that can be collected from the content into a section called RECOMMENDATIONS.\n\nYou combine all understanding of the article into a single, 20-word sentence in a section called ONE SENTENCE SUMMARY:.\n\nOUTPUT INSTRUCTIONS\nYou only output Markdown.\nDo not give warnings or notes; only output the requested sections.\nYou use numbered lists, not bullets.\nDo not repeat ideas, quotes, facts, or resources.\nDo not start items with the same opening words.\nDo not include any commentary or explanation.\n\nINPUT:", //nolint:lll long line
+		promptExtra: ""},
 	MakeExplanation: {
 		prompt:      "Explain the following block of text in a way that a 5-year-old could understand. Use simple language, relatable examples, and avoid technical jargon: ",
 		promptExtra: "Goals: Simplify complex ideas into easy-to-grasp concepts. Use analogies or relatable scenarios to help explain abstract concepts. Make it fun and engaging while still being accurate"},
@@ -90,7 +89,7 @@ func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, i
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model:  model.String(),
-		Prompt: prompt.promptToText() + "[" + inputForPrompt + "]" + prompt.promptExtraToText(),
+		Prompt: prompt.promptToText() + " [ " + inputForPrompt + " ] " + prompt.promptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
 	}
@@ -117,43 +116,11 @@ func askAI(client *api.Client, model ModelName, inputForPrompt string) (api.Gene
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model: model.String(),
-		Prompt: "My name is Ctrl+Revise and I am an AI agent running on a personal computer that doesn't require internet access," +
-			"Provide information or answers for the following questions based on my training data. " +
-			"If I'm unsure or don't have enough information, please indicate this clearly." +
+		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll long line
 			inputForPrompt +
-			"Note: Please only provide information that you are confident about and acknowledge any limitations or uncertainties in your response. " +
-			"Output only the answer and nothing else, do not chat, no preamble, get to the point.",
+			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\".",
 		// set streaming to false
 		Stream: new(bool),
-	}
-
-	// TODO: implement timeout
-	ctx := context.Background()
-	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
-		response = resp
-		return nil
-	}
-
-	err := client.Generate(ctx, req, respFunc)
-	if err != nil {
-		slog.Error("Failed to generate", "error", err)
-		return api.GenerateResponse{}, err
-	}
-
-	return response, nil
-}
-
-func reGenerateResponseFromOllama(client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
-	// TODO How long does the context last?
-	var response api.GenerateResponse
-	req := &api.GenerateRequest{
-		Model:  string(Llama3),
-		Prompt: prompt.promptToText(),
-		// set streaming to false
-		Stream:  new(bool),
-		Context: msgContext,
 	}
 
 	// TODO: implement timeout
@@ -193,10 +160,7 @@ func pullModel(model ModelName, update bool) error {
 	progressFunc := func(resp api.ProgressResponse) error {
 		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
 		if resp.Total == resp.Completed {
-			guiApp.SendNotification(&fyne.Notification{
-				Title:   "Model Download Completed",
-				Content: "Model " + model.String() + " has been pulled",
-			})
+			slog.Info("Model pulled", "model", model, "resp", resp)
 		}
 		return nil
 	}
@@ -206,6 +170,7 @@ func pullModel(model ModelName, update bool) error {
 		slog.Error("Failed to pull model", "error", err)
 		return err
 	}
+	showNotification("Model Download Completed", "Model "+model.String()+" has been pulled")
 	return nil
 }
 

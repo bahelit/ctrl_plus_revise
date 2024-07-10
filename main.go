@@ -12,9 +12,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/theme"
 	docker "github.com/docker/docker/client"
 	htgotts "github.com/hegedustibor/htgo-tts"
@@ -49,7 +47,7 @@ func main() {
 
 	// Prepare the loading screen and system tray
 	loadIcon()
-	startupWindow := loadingScreen()
+	startupWindow := startupScreen()
 	sysTray := setupSysTray(guiApp)
 	if guiApp.Preferences().BoolWithFallback(showStartWindowKey, true) {
 		slog.Debug("Hiding start window")
@@ -66,22 +64,11 @@ func main() {
 			os.Exit(1)
 		}
 		fetchModel()
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		startupWindow.Close()
 	}()
 
-	// Say hello
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
-	if speakResponse {
-		go func() {
-			prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
-			_ = speech.Speak("")
-			speakErr := speech.Speak("Control Plus Revise is set to: " + prompt)
-			if speakErr != nil {
-				slog.Error("Failed to speak", "error", speakErr)
-			}
-		}()
-	}
+	sayHello()
 
 	// Listen for global hotkeys
 	go registerHotkeys(sysTray)
@@ -102,16 +89,23 @@ func main() {
 		handleShutdown(d, p)
 	}(dockerClient, ollamaPID)
 
+	slog.Info("Ctrl+Revise is ready to help you!")
 	// Run the GUI event loop
 	guiApp.Run()
 }
 
-func loadingScreen() fyne.Window {
-	startupWindow := guiApp.NewWindow("Starting Control+Revise")
-	infinite := widget.NewProgressBarInfinite()
-	text := widget.NewLabel("Starting AI services in the background")
-	startupWindow.SetContent(container.NewVBox(text, infinite))
-	return startupWindow
+func sayHello() {
+	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	if speakResponse {
+		go func() {
+			prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+			_ = speech.Speak("")
+			speakErr := speech.Speak("Control Plus Revise is set to: " + prompt)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
+		}()
+	}
 }
 
 func fetchModel() {
@@ -189,8 +183,8 @@ func setupServices() bool {
 		slog.Info("Starting Ollama container")
 		return setupDocker()
 	}
-	slog.Info("Starting Ollama")
 
+	slog.Info("Starting Ollama")
 	// Start Ollama locally
 	versionCMD := exec.Command("ollama", "--version")
 	err = versionCMD.Run()
@@ -203,7 +197,7 @@ func setupServices() bool {
 	if err != nil {
 		return connectedToOllama
 	}
-	time.Sleep(6 * time.Second)
+	time.Sleep(5 * time.Second)
 	go func() {
 		err = ollamaServe.Wait()
 		slog.Info("Ollama process exited", "error", err)

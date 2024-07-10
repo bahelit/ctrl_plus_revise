@@ -66,7 +66,6 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
 	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
 	useDockerTextCheckBox := useDockerCheckBox(guiApp)
-	//stopOllamaCheckBox := stopOllamaOnShutdownCheckBox(guiApp)
 	welcomeText := mainWindowText()
 	hideWindowButton := widget.NewButton("Hide This Window", func() {
 		sysTray.Hide()
@@ -133,7 +132,7 @@ func mainWindowText() *fyne.Container {
 	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
-	shortcutText := widget.NewLabel("Pressing \"Ctrl + Shift + C\" will replace the highlighted text with an AI generated a response.")
+	shortcutText := widget.NewLabel("Pressing \"Alt + Ctrl + C\" will replace the highlighted text with an AI generated a response.")
 	shortcutText.Alignment = fyne.TextAlignCenter
 	shortcutText.TextStyle = fyne.TextStyle{Bold: true}
 	closeMeText := widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
@@ -213,21 +212,6 @@ func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
 	})
 	speakAI.Checked = speakAIResponse
 	return speakAI
-}
-
-func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
-	stop := guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDownKey, true)
-	startUpCheck := widget.NewCheck("Stop AI on program exit", func(b bool) {
-		if b == false {
-			slog.Debug("Stopping Ollama on shutdown")
-			guiApp.Preferences().SetBool(stopOllamaOnShutDownKey, false)
-		} else if b == true {
-			guiApp.Preferences().SetBool(stopOllamaOnShutDownKey, true)
-			slog.Debug("Leaving Ollama running on shutdown")
-		}
-	})
-	startUpCheck.Checked = stop
-	return startUpCheck
 }
 
 func useDockerCheckBox(guiApp fyne.App) *widget.Check {
@@ -526,4 +510,27 @@ func setBindingVariables() error {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 	}
 	return err
+}
+
+func showNotification(title, content string) {
+	guiApp.SendNotification(&fyne.Notification{
+		Title:   title,
+		Content: content,
+	})
+}
+
+func startupScreen() fyne.Window {
+	startupWindow := guiApp.NewWindow("Starting Control+Revise")
+	infinite := widget.NewProgressBarInfinite()
+	text := widget.NewLabel("Starting AI services in the background")
+	startupWindow.SetContent(container.NewVBox(text, infinite))
+	return startupWindow
+}
+
+func loadingScreenWithMessage(title, msg string) fyne.Window {
+	loadingScreen := guiApp.NewWindow(title)
+	infinite := widget.NewProgressBarInfinite()
+	text := widget.NewLabel(msg)
+	loadingScreen.SetContent(container.NewVBox(text, infinite))
+	return loadingScreen
 }

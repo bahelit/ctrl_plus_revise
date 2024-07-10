@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
-	"github.com/jaypipes/ghw"
 	"log/slog"
+
+	"github.com/jaypipes/ghw"
+
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 )
 
 const (
