@@ -21,6 +21,7 @@ var (
 	th                    = throttle.NewThrottle(1)
 	lastClipboardContent  [32]byte
 	lastKeyPressTime      = time.Now()
+	timeDiff              time.Duration
 	waitBetweenKeyPresses = 125 * time.Millisecond
 	keyPressSleep         = 125
 )
@@ -28,31 +29,17 @@ var (
 // registerHotkeys registers the hotkeys for the application
 // TODO: Allow users changes the mappings
 func registerHotkeys(sysTray fyne.Window) {
-	hook.Register(hook.KeyDown, []string{"a", "ctrl", "alt"}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{"a", "alt"}, func(e hook.Event) {
 		slog.Debug("askKey has been pressed", "event", e)
-		timeDiff := time.Since(lastKeyPressTime)
-		if timeDiff < waitBetweenKeyPresses {
-			slog.Info("Ignoring key press", "timeDiff", timeDiff, "waitBetweenKeyPresses", waitBetweenKeyPresses)
-			lastKeyPressTime = time.Now()
-			return
-		}
 		handleAskKeyPressed()
-		lastKeyPressTime = time.Now()
 	})
-	hook.Register(hook.KeyDown, []string{"c", "ctrl", "alt"}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{"c", "alt"}, func(e hook.Event) {
 		slog.Debug("userShortcutKey has been pressed", "event", e)
-		timeDiff := time.Since(lastKeyPressTime)
-		if timeDiff < waitBetweenKeyPresses {
-			slog.Info("Ignoring key press", "timeDiff", timeDiff, "waitBetweenKeyPresses", waitBetweenKeyPresses)
-			lastKeyPressTime = time.Now()
-			return
-		}
 		handleUserShortcutKeyPressed()
-		lastKeyPressTime = time.Now()
 	})
-	hook.Register(hook.KeyDown, []string{"tab", "`"}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{"p", "alt"}, func(e hook.Event) {
 		slog.Debug("cyclePromptKey has been pressed", "event", e)
-		timeDiff := time.Since(lastKeyPressTime)
+		timeDiff = time.Since(lastKeyPressTime)
 		if timeDiff < waitBetweenKeyPresses {
 			slog.Info("Ignoring key press", "timeDiff", timeDiff, "waitBetweenKeyPresses", waitBetweenKeyPresses)
 			lastKeyPressTime = time.Now()
@@ -61,9 +48,9 @@ func registerHotkeys(sysTray fyne.Window) {
 		handleCyclePromptKeyPressed()
 		lastKeyPressTime = time.Now()
 	})
-	hook.Register(hook.KeyDown, []string{"r", "ctrl", "alt"}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{"r", "alt"}, func(e hook.Event) {
 		slog.Debug("readTextKey has been pressed", "event", e)
-		timeDiff := time.Since(lastKeyPressTime)
+		timeDiff = time.Since(lastKeyPressTime)
 		if timeDiff < waitBetweenKeyPresses {
 			slog.Info("Ignoring key press", "timeDiff", timeDiff, "waitBetweenKeyPresses", waitBetweenKeyPresses)
 			lastKeyPressTime = time.Now()

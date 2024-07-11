@@ -29,13 +29,12 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 - **Grammar suggestions**: Ctrl+Revise provides a grammar correcter to improve your writing.
 - **Vocabulary enhancements**: Ctrl+Revise will come up with alternative words and expand on topics.
 - **Audio feedback**: Ctrl+Revise provides audio feedback for the suggestions made by the AI models.
-- **Screen reader support**: Ctrl+Revise supports reading the highlighted test for the visually impaired users.
+- **Screen reader support**: Ctrl+Revise supports reading the highlighted text for visually impaired users.
 - **Cross-platform compatibility**: Ctrl+Revise is compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
 
 > [!NOTE]
 > The Speak feature and text reader are disabled by default and can be enabled in the settings.
-
-> [!NOTE]
+>
 > The Docker integration is disabled by default and can be enabled in the settings.
 
 ## Starting
@@ -48,9 +47,9 @@ Dependencies:
 
 - [Ollama](https://ollama.com/)
 
-Ollama is a tool for interacting with various Large-Language-Models. If it is already running on the machine Ctrl+Revise will connect to it, if Ollama is not already running it will be started.
+Ollama is a tool for interacting with various Large-Language-Models. It is used to provide the AI suggestions in Ctrl+Revise.
 
-For [Docker](https://docker.com) users you can select to use Docker, Ctrl+Revise will pull the latest Ollama Docker image and manage running it.
+Users running [Docker](https://docker.com) can select to use Docker to run Ollama, Ctrl+Revise will pull the latest Ollama Docker image and manage running it.
 
 To install the docker container manually [Ollama Docker Image](https://hub.docker.com/r/ollama/ollama) provides the latest images for AMD and Nvidia GPUs.
 
@@ -59,15 +58,21 @@ _Docker command for AMD GPUs:_
 docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
 ```
 
-For users who would like to run Ollama on their own, you can download the latest release from the [Ollama.com](https://ollama.com/download) website. 
-
-Ctrl+Revise will start Ollama for you if it is not already running.
+For users who would like to run Ollama on their own, you can download the latest release from the [Ollama.com](https://ollama.com/download) website.
 
 Arch Linux users can install Ollama from the official repository.
 
 | CPU                     | AMD GPU                      | Nvidia GPU                     |
 |-------------------------|------------------------------|--------------------------------|
 | `sudo pacman -S ollama` | `sudo pacman -S ollama-rocm` | `sudo pacman -S ollama-nvidia` |
+
+Ctrl+Revise will start Ollama for you if it is not already running.
+
+If you have Ollama running on a different machine, you can configure the IP address and port in the settings or by setting 
+the environment variable `OLLAMA_HOST` to the address of the machine running Ollama.
+```bash
+OLLAMA_HOST=http://<host-IP>:11434
+```
 
 
 To start the project run the following command:
@@ -79,7 +84,8 @@ go run .
 
 > [!NOTE]
 > The first time you run the project it will download the required models and may take a few minutes to start.
-> The first request can take a few seconds to respond as the model is loaded into memory.
+> 
+> The first request can take a few seconds to respond as the model is loaded into memory. The memory is released after a few minutes of inactivity.
 
 #### Wayland
 Users running Wayland may experience issues with reading the text out of some applications, it is recommended to use Xorg.
@@ -101,9 +107,9 @@ make stringer
 
 ## Screenshots
 
-|                   Main Menu                   |                      Keyboard Shortcuts                       |                     Managing models                     |
-|:---------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------:|
-| ![Main Menu](images/Screenshot_Main_Menu.png) | ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png) | ![Shortcuts Window](images/Screenshot_Ask_Question.png) |
+|                   Main Menu                   |                      Keyboard Shortcuts                       |                        Ask A Question                        |
+|:---------------------------------------------:|:-------------------------------------------------------------:|:------------------------------------------------------------:|
+| ![Main Menu](images/Screenshot_Main_Menu.png) | ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png) | ![Ask A Question Window](images/Screenshot_Ask_Question.png) |
 
 ## About
 

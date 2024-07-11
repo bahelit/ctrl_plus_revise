@@ -132,7 +132,7 @@ func mainWindowText() *fyne.Container {
 	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
-	shortcutText := widget.NewLabel("Pressing \"Alt + Ctrl + C\" will replace the highlighted text with an AI generated a response.")
+	shortcutText := widget.NewLabel("Pressing \"Alt + C\" will replace the highlighted text with an AI generated a response.")
 	shortcutText.Alignment = fyne.TextAlignCenter
 	shortcutText.TextStyle = fyne.TextStyle{Bold: true}
 	closeMeText := widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
@@ -396,23 +396,27 @@ func showShortcuts(guiApp fyne.App) {
 	var grid *fyne.Container
 
 	label1 := widget.NewLabel("Ask a Question with highlighted text")
-	value1 := widget.NewLabel("Alt + Ctrl + A")
+	value1 := widget.NewLabel("Alt + A")
 	value1.TextStyle = fyne.TextStyle{Bold: true}
 
 	label2 := widget.NewLabel("Replace highlighted text with: ")
 	label2Binding := widget.NewLabelWithData(selectedPromptBinding)
-	value2 := widget.NewLabel("Alt + Ctrl + C")
+	value2 := widget.NewLabel("Alt + C")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	hbox := container.NewHBox(label2, label2Binding)
 
 	label3 := widget.NewLabel("Read the highlighted text")
-	value3 := widget.NewLabel("Alt + Ctrl + R")
+	value3 := widget.NewLabel("Alt + R")
 	value3.TextStyle = fyne.TextStyle{Bold: true}
+
+	label4 := widget.NewLabel("Cycle through the prompt options")
+	value4 := widget.NewLabel("Alt + P")
+	value4.TextStyle = fyne.TextStyle{Bold: true}
 	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
 	if speakAIResponse {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3)
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3, label4, value4)
 	} else {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2)
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label4, value4)
 	}
 	shortCuts.SetContent(grid)
 	shortCuts.Show()
@@ -421,7 +425,7 @@ func showShortcuts(guiApp fyne.App) {
 func askQuestion(guiApp fyne.App) {
 	slog.Debug("Asking Question")
 	var (
-		screenHeight float32 = 180.0
+		screenHeight float32 = 188.0
 		screenWidth  float32 = 480.0
 	)
 	question := guiApp.NewWindow("Ctrl+Revise Questions")
@@ -433,6 +437,7 @@ func askQuestion(guiApp fyne.App) {
 	label2.TextStyle = fyne.TextStyle{Italic: true}
 
 	text := widget.NewMultiLineEntry()
+	text.SetMinRowsVisible(4)
 	text.PlaceHolder = "Ask your question here, remember this is an AI and important\n" +
 		"questions should be verified with other sources."
 	text.OnSubmitted = func(s string) {
@@ -442,10 +447,14 @@ func askQuestion(guiApp fyne.App) {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
+		loadingScreen := loadingScreenWithMessage(thinkingMsg,
+			"Asking question with model: "+selectedPrompt.String()+"...")
+		loadingScreen.Show()
 		response, err := askAI(ollamaClient, selectedModel, s)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 		}
+		loadingScreen.Hide()
 		questionPopUp(guiApp, s, &response)
 		question.Close()
 	}
@@ -466,10 +475,14 @@ func askQuestion(guiApp fyne.App) {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
+		loadingScreen := loadingScreenWithMessage(thinkingMsg,
+			"Asking question with model: "+selectedPrompt.String()+"...")
+		loadingScreen.Show()
 		response, err := askAI(ollamaClient, selectedModel, text.Text)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 		}
+		loadingScreen.Hide()
 		questionPopUp(guiApp, text.Text, &response)
 		question.Close()
 	})
@@ -477,13 +490,13 @@ func askQuestion(guiApp fyne.App) {
 	topText := container.NewHBox(label1, label2)
 	questionLayout := layout.NewResponsiveLayout(
 		layout.Responsive(topText), // all sizes to 100%
-		layout.Responsive(text, 1.0, 1.0))
+		layout.Responsive(text))
 	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
-	questionWindow := container.NewVBox(
+	questionWindow := container.NewVSplit(
 		questionLayout,
 		buttonLayout,
 	)
-	question.SetContent(questionWindow)
+	question.SetContent(container.NewVScroll(questionWindow))
 	question.Show()
 }
 
