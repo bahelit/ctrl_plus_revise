@@ -18,9 +18,6 @@ This tool is compatible Windows, Linux, and macOS, supporting AMD, Nvidia, and A
 
 The AI model runs locally on your machine, ensuring your privacy and data security.
 
-> [!CAUTION]
-> The use of the Speak feature and text reader currently sends the text to a third-party (Google Translate) for processing.
-
 
 ## Features
 
@@ -32,6 +29,9 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 - **Audio feedback**: Provides audio feedback for the suggestions made by the AI models.
 - **Screen reader support**: Supports reading the highlighted text for visually impaired users.
 - **Cross-platform compatibility**: Compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
+
+> [!CAUTION]
+> The use of the Speak feature and text reader currently sends the text to a third-party (Google Translate) for processing.
 
 > [!NOTE]
 > The Speak feature and text reader are disabled by default and can be enabled in the settings.
@@ -86,7 +86,7 @@ go run .
 > [!NOTE]
 > The first time you run the project it will download the required models and may take a few minutes to start.
 > 
-> The first request can take a few seconds to respond as the model is loaded into memory. The memory is released after a few minutes of inactivity.
+> The first request can take a few seconds to respond as the model is loaded into memory. The memory is released after five minutes of inactivity.
 
 #### Wayland
 Users running Wayland may experience issues with reading the text out of some applications, it is recommended to use Xorg.
