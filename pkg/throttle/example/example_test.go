@@ -1,4 +1,4 @@
-package throttle_test
+package example_test
 
 import (
 	"fmt"

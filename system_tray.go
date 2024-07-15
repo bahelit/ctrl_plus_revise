@@ -22,6 +22,8 @@ const (
 	firstRunKey             = "firstRun"
 	currentPromptKey        = "lastPrompt"
 	currentModelKey         = "lastModel"
+	currentFromLangKey      = "fromLang"
+	currentToLangKey        = "toLang"
 	stopOllamaOnShutDownKey = "stopOllamaOnShutDown"
 	useDockerKey            = "useDocker"
 )
@@ -98,11 +100,24 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	chooseModelLabel.Alignment = fyne.TextAlignTrailing
 	aiModelDropdown = selectAIModelDropDown()
 
+	chooseLanguageLabel := widget.NewLabel("Choose the languages for translation")
+	chooseLanguageLabel.Alignment = fyne.TextAlignTrailing
+	fromLangDropdown := selectTranslationFromDropDown()
+	toLangDropdown := selectTranslationToDropDown()
+
+	langDivider := container.NewHBox(
+		widget.NewLabel("From: "),
+		fromLangDropdown,
+		widget.NewLabel("To: "),
+		toLangDropdown)
+
 	dropDownMenu := container.NewAdaptiveGrid(2,
 		chooseActionLabel,
 		aiActionDropdown,
 		chooseModelLabel,
-		aiModelDropdown)
+		aiModelDropdown,
+		chooseLanguageLabel,
+		langDivider)
 	sysTray.SetContent(container.NewVBox(mainWindow, dropDownMenu))
 
 	sysTray.SetCloseIntercept(func() {
@@ -132,7 +147,7 @@ func mainWindowText() *fyne.Container {
 	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
-	shortcutText := widget.NewLabel("Pressing \"Alt + C\" will replace the highlighted text with an AI generated a response.")
+	shortcutText := widget.NewLabel("Pressing \"Alt + C\" will send the highlighted text to an AI\nthe response is put into the clipboard")
 	shortcutText.Alignment = fyne.TextAlignCenter
 	shortcutText.TextStyle = fyne.TextStyle{Bold: true}
 	closeMeText := widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
@@ -158,7 +173,7 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
 	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
 	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
-	runOnCopy := widget.NewCheck("Replace highlighted text with AI response", func(b bool) {
+	runOnCopy := widget.NewCheck("Auto paste text with AI response", func(b bool) {
 		if b == false {
 			slog.Debug("Replace highlighted checkbox is off")
 			guiApp.Preferences().SetBool(replaceHighlightedText, false)
@@ -273,7 +288,6 @@ func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 }
 
 func selectCopyActionDropDown() *widget.Select {
-	// FIXME - Not updating when the selection is changed with keyboard shortcut
 	combo := widget.NewSelect([]string{
 		CorrectGrammar.String(),
 		MakeItProfessional.String(),
@@ -316,8 +330,8 @@ func selectCopyActionDropDown() *widget.Select {
 
 	return combo
 }
+
 func selectAIModelDropDown() *widget.Select {
-	// FIXME - Not updating when the selection is changed with keyboard shortcut
 	combo := widget.NewSelect([]string{
 		BashBot.String(),
 		CodeLlama.String(),
@@ -348,6 +362,53 @@ func selectAIModelDropDown() *widget.Select {
 		})
 	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
 	combo.SetSelected(ModelName(model).String())
+
+	return combo
+}
+
+func selectTranslationFromDropDown() *widget.Select {
+	combo := widget.NewSelect([]string{
+		string(English),
+		string(Arabic),
+		string(Chinese),
+		string(French),
+		string(German),
+		string(Japanese),
+		string(Portuguese),
+		string(Russian),
+		string(Spanish)},
+		func(value string) {
+			guiApp.Preferences().SetString(currentFromLangKey, value)
+			err := selectedModelBinding.Set(int(selectedModel))
+			if err != nil {
+				slog.Error("Failed to set selectedModelBinding", "error", err)
+			}
+		})
+	language := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
+	combo.SetSelected(language)
+
+	return combo
+}
+func selectTranslationToDropDown() *widget.Select {
+	combo := widget.NewSelect([]string{
+		string(Spanish),
+		string(Arabic),
+		string(Chinese),
+		string(French),
+		string(German),
+		string(Japanese),
+		string(Portuguese),
+		string(Russian),
+		string(English)},
+		func(value string) {
+			guiApp.Preferences().SetString(currentToLangKey, value)
+			err := selectedModelBinding.Set(int(selectedModel))
+			if err != nil {
+				slog.Error("Failed to set selectedModelBinding", "error", err)
+			}
+		})
+	language := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
+	combo.SetSelected(language)
 
 	return combo
 }
@@ -405,18 +466,30 @@ func showShortcuts(guiApp fyne.App) {
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	hbox := container.NewHBox(label2, label2Binding)
 
-	label3 := widget.NewLabel("Read the highlighted text")
-	value3 := widget.NewLabel("Alt + R")
+	label3 := widget.NewLabel("Cycle through the prompt options")
+	value3 := widget.NewLabel("Alt + P")
 	value3.TextStyle = fyne.TextStyle{Bold: true}
 
-	label4 := widget.NewLabel("Cycle through the prompt options")
-	value4 := widget.NewLabel("Alt + P")
+	label4 := widget.NewLabel("Read the highlighted text")
+	value4 := widget.NewLabel("Alt + R")
 	value4.TextStyle = fyne.TextStyle{Bold: true}
+
+	from, err := translationFromBinding.Get()
+	if err != nil {
+		slog.Error("Failed to get translationFromBinding", "error", err)
+	}
+	to, err := translationToBinding.Get()
+	if err != nil {
+		slog.Error("Failed to get translationToBinding", "error", err)
+	}
+	label5 := widget.NewLabel("Translate the highlighted text, From: " + from + " To: " + to)
+	value5 := widget.NewLabel("Alt + T")
+	value5.TextStyle = fyne.TextStyle{Bold: true}
 	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
 	if speakAIResponse {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3, label4, value4)
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3, label4, value4, label5, value5)
 	} else {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label4, value4)
+		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label4, value4, label5, value5)
 	}
 	shortCuts.SetContent(grid)
 	shortCuts.Show()
@@ -512,6 +585,20 @@ func setBindingVariables() error {
 	selectedModelBinding = binding.NewInt()
 	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
 	err := selectedModelBinding.Set(model)
+	if err != nil {
+		slog.Error("Failed to set selectedModelBinding", "error", err)
+	}
+
+	translationFromBinding = binding.NewString()
+	from := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
+	err = translationFromBinding.Set(from)
+	if err != nil {
+		slog.Error("Failed to set selectedModelBinding", "error", err)
+	}
+
+	translationToBinding = binding.NewString()
+	to := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
+	err = translationToBinding.Set(to)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}

@@ -13,6 +13,7 @@ go.work
 
 # Generated folders.
 bin/
+build-dir
 dist-ssr/
 dist/
 pb_data/

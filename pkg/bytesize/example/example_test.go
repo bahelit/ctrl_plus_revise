@@ -1,4 +1,4 @@
-package bytesize_test
+package example_test
 
 import (
 	"fmt"

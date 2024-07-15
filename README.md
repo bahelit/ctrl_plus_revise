@@ -24,13 +24,14 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 
 ## Features
 
-- **Local AI model**: Ctrl+Revise runs locally on your machine, ensuring your privacy and data security.
-- **Keyboard shortcuts**: Ctrl+Revise uses keyboard shortcuts to provide quick responses without switching focus away to another program.
-- **Grammar suggestions**: Ctrl+Revise provides a grammar correcter to improve your writing.
-- **Vocabulary enhancements**: Ctrl+Revise will come up with alternative words and expand on topics.
-- **Audio feedback**: Ctrl+Revise provides audio feedback for the suggestions made by the AI models.
-- **Screen reader support**: Ctrl+Revise supports reading the highlighted text for visually impaired users.
-- **Cross-platform compatibility**: Ctrl+Revise is compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
+- **Local AI model**: Runs locally on your machine, ensuring your privacy and data security.
+- **Keyboard shortcuts**: Uses keyboard shortcuts to provide quick responses without switching focus away to another program.
+- **Grammar suggestions**: Provides a grammar correcter to improve your writing.
+- **Vocabulary enhancements**: Will come up with alternative words and expand on topics.
+- **Translation**: Can translate text to and from multiple languages.
+- **Audio feedback**: Provides audio feedback for the suggestions made by the AI models.
+- **Screen reader support**: Supports reading the highlighted text for visually impaired users.
+- **Cross-platform compatibility**: Compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
 
 > [!NOTE]
 > The Speak feature and text reader are disabled by default and can be enabled in the settings.
@@ -47,7 +48,7 @@ Dependencies:
 
 - [Ollama](https://ollama.com/)
 
-Ollama is a tool for interacting with various Large-Language-Models. It is used to provide the AI suggestions in Ctrl+Revise.
+Ollama is a tool for interacting with various Large-Language-Models. It is used to interact with the AI models.
 
 Users running [Docker](https://docker.com) can select to use Docker to run Ollama, Ctrl+Revise will pull the latest Ollama Docker image and manage running it.
 
@@ -104,6 +105,7 @@ This project uses the stringer tool, this will generate a `<type>_string.go` fil
 ```bash
 make stringer
 ```
+
 
 ## Screenshots
 

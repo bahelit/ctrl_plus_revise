@@ -18,6 +18,21 @@ const (
 	Llama3                        // llama3:latest
 )
 
+type Language string
+
+const (
+	Arabic     Language = "Arabic"
+	Chinese    Language = "Chinese"
+	English    Language = "English"
+	French     Language = "French"
+	German     Language = "German"
+	Italian    Language = "Italian"
+	Japanese   Language = "Japanese"
+	Portuguese Language = "Portuguese"
+	Russian    Language = "Russian"
+	Spanish    Language = "Spanish"
+)
+
 //go:generate stringer -linecomment -type=PromptMsg
 type PromptMsg int
 
@@ -41,16 +56,16 @@ type promptText struct {
 var promptToText = map[PromptMsg]promptText{
 	CorrectGrammar: {
 		prompt:      "IDENTITY and PURPOSE\nYou are a writing expert. You refine the input text to enhance clarity, coherence, grammar, and style.\n\nSteps\nAnalyze the input text for grammatical errors, stylistic inconsistencies, clarity issues, and coherence.\nApply corrections and improvements directly to the text.\nMaintain the original meaning and intent of the user's text, ensuring that the improvements are made within the context of the input language's grammatical norms and stylistic conventions.\nOUTPUT INSTRUCTIONS\nRefined and improved text that has no grammar mistakes.\nReturn in the same language as the input.\nInclude NO additional commentary or explanation in the response.\nINPUT:", //nolint:lll long line
-		promptExtra: " Return the corrected text without explaining what changed, just provide the corrected text"},
+		promptExtra: " Return the corrected text without explaining what changed or telling me \"Here is the revised text\", just provide the corrected text and output just the result"},
 	MakeItFriendly: {
 		prompt:      "Give the following text a friendly makeover by injecting a touch of humor, warmth, and approachability: ",
-		promptExtra: " You don't have to explain your changes, just make the text more friendly"},
+		promptExtra: " Please don't to explain the changes or telling me \"Here is the revised text\", just make the text more friendly and output the result"},
 	MakeItAList: {
 		prompt:      "Read the following text and create a bulleted list summarizing its main points: ",
 		promptExtra: " No need to explain your list, just provide the main points in a list format."},
 	MakeItProfessional: {
 		prompt:      "Act as a writer. Read the following text carefully and revise it to present a more professional tone, ensuring accurate and proper usage of grammar and punctuation: ",
-		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text in a clear and concise format with no explanation."},
+		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text without telling me it is the revised text, in a clear and concise format with no explanation, output just the result."},
 	MakeHeadline: {
 		prompt:      "Act as a writer. Read the following text carefully and create a concise and attention-grabbing headline that summarizes its main idea or key point: ",
 		promptExtra: " Your headline should be no more than 5-7 words, yet effectively capture the essence of the text. Please submit your headline in the format below:\n\n[Headline]"},
@@ -64,7 +79,8 @@ var promptToText = map[PromptMsg]promptText{
 		prompt: "Read the following text carefully and determine its nature: does it appear to be based on factual information or is it fictional in nature?: ",
 		promptExtra: " If the text appears to be non-fictional in nature, expand on it by incorporating relevant, accurate, and verifiable information from credible sources. " +
 			"Ensure that all additional information is properly sourced and attributed to credible sources.\n\n\nHowever, if the text appears to be fictional in nature, feel free to expand on it by adding to the story, developing characters, or exploring themes. " +
-			"Please keep your additions consistent with the tone and style of the original text."},
+			"Please keep your additions consistent with the tone and style of the original text. " +
+			"Please do not provide any commentary or explanation, just expand on the text."},
 }
 
 func (prompt PromptMsg) promptToText() string {
@@ -121,6 +137,38 @@ func askAI(client *api.Client, model ModelName, inputForPrompt string) (api.Gene
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
 			"Don't explain you understand\n" +
 			"The output should be in markdown format.",
+		// set streaming to false
+		Stream: new(bool),
+	}
+
+	// TODO: implement timeout
+	ctx := context.Background()
+	respFunc := func(resp api.GenerateResponse) error {
+		// Only print the response here; GenerateResponse has a number of other
+		// interesting fields you want to examine.
+		response = resp
+		return nil
+	}
+
+	err := client.Generate(ctx, req, respFunc)
+	if err != nil {
+		slog.Error("Failed to generate", "error", err)
+		return api.GenerateResponse{}, err
+	}
+
+	return response, nil
+}
+
+func askAIToTranslate(client *api.Client, model ModelName, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
+	var response api.GenerateResponse
+	req := &api.GenerateRequest{
+		Model: model.String(),
+		Prompt: "Translate the following text from [" + string(fromLang) + "] to [" + string(toLang) + "]: " +
+			inputForPrompt +
+			"Please provide a translation that accurately conveys the original meaning and tone of the text.\n" +
+			"If you encounter any ambiguities or uncertainties, please indicate this in your response.\n" +
+			"Do not provide an explanation of the translation, get to the point and just output the translated text " +
+			"without any notes.",
 		// set streaming to false
 		Stream: new(bool),
 	}

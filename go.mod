@@ -10,6 +10,7 @@ require (
 	github.com/go-vgo/robotgo v0.110.1
 	github.com/hegedustibor/htgo-tts v0.0.0-20230402053941-cd8d1a158135
 	github.com/jaypipes/ghw v0.12.0
+	github.com/micmonay/keybd_event v1.1.2
 	github.com/ollama/ollama v0.2.1
 	github.com/robotn/gohook v0.41.0
 )

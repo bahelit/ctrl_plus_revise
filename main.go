@@ -21,17 +21,19 @@ import (
 
 // TODO: Refactor to remove some global variables
 var (
-	dockerClient          *docker.Client
-	ollamaClient          *ollama.Client
-	selectedModel         = Llama3
-	selectedPrompt        = CorrectGrammar
-	selectedModelBinding  binding.Int
-	selectedPromptBinding binding.String
-	guiApp                fyne.App
-	containerID           string
-	ollamaPID             int
-	speech                htgotts.Speech
-	stopOllamaOnShutDown  = false
+	dockerClient           *docker.Client
+	ollamaClient           *ollama.Client
+	selectedModel          = Llama3
+	selectedPrompt         = CorrectGrammar
+	selectedModelBinding   binding.Int
+	translationToBinding   binding.String
+	translationFromBinding binding.String
+	selectedPromptBinding  binding.String
+	guiApp                 fyne.App
+	containerID            string
+	ollamaPID              int
+	speech                 htgotts.Speech
+	stopOllamaOnShutDown   = false
 )
 
 func main() {
@@ -65,7 +67,7 @@ func main() {
 	sayHello()
 
 	// Listen for global hotkeys
-	go registerHotkeys(sysTray)
+	go registerHotkeys()
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)
