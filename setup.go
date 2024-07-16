@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -174,10 +173,13 @@ func stopOllama(p int) {
 		slog.Error("Ollama PID not found")
 		return
 	}
-	err := syscall.Kill(p, syscall.SIGQUIT)
+	ollamaProcess, err := os.FindProcess(p)
 	if err != nil {
-		slog.Error("Failed to stop Ollama", "error", err)
-	} else {
-		return
+		slog.Error("Failed to find process", "error", err)
+	}
+
+	err = ollamaProcess.Kill()
+	if err != nil {
+		slog.Error("Failed to find process", "error", err)
 	}
 }
