@@ -9,15 +9,12 @@ package clipboard
 import (
 	"errors"
 	"log/slog"
-	"os"
 	"os/exec"
 )
 
 const (
-	xsel    = "xsel"
-	xclip   = "xclip"
-	wlcopy  = "wl-copy"
-	wlpaste = "wl-paste"
+	xsel  = "xsel"
+	xclip = "xclip"
 )
 
 var (
@@ -32,23 +29,10 @@ var (
 	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
 	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
 
-	wlCopyArgs  = []string{wlcopy, "--primary"}
-	wlPasteArgs = []string{wlpaste, "--primary"}
-
 	errMissingCommands = errors.New("no clipboard utilities available. Please install xsel or xclip")
 )
 
 func init() {
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
-		copyCmdArgs = wlCopyArgs
-		pasteCmdArgs = wlPasteArgs
-
-		if _, err := exec.LookPath(wlcopy); err == nil {
-			slog.Info("Using wl-clipboard")
-			return
-		}
-	}
-
 	pasteCmdArgs = xclipPasteArgs
 	copyCmdArgs = xclipCopyArgs
 

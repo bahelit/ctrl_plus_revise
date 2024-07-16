@@ -1,10 +1,10 @@
 # Ctrl+Revise
 
-- [Project overview](#project-overview)
-- [Starting Ctrl+Revise](#starting-ctrlrevise)
-- [Developing Ctrl+Revise](#developing-ctrlrevise)
-- [Deploying Ctrl+Revise](#deploying-ctrlrevise)
-- [About Ctrl+Revise](#about-ctrlrevise)
+* [Project overview](#project-overview)
+* [Starting Ctrl+Revise](#starting-ctrlrevise)
+* [Developing Ctrl+Revise](#developing-ctrlrevise)
+* [Deploying Ctrl+Revise](#deploying-ctrlrevise)
+* [About Ctrl+Revise](#about-ctrlrevise)
 
 
 ## Overview
@@ -40,12 +40,12 @@ The AI model runs locally on your machine, ensuring your privacy and data securi
 
 ## Starting
 
-System Requirements:
+#### System Requirements:
 
 - 8GB of RAM (GPU) or 16GB of RAM (CPU)
 
-Dependencies:
-
+#### Dependencies:
+##### Ollama
 - [Ollama](https://ollama.com/)
 
 Ollama is a tool for interacting with various Large-Language-Models. It is used to interact with the AI models.
@@ -75,6 +75,18 @@ the environment variable `OLLAMA_HOST` to the address of the machine running Oll
 OLLAMA_HOST=http://<host-IP>:11434
 ```
 
+##### Xclip or Xsel
+- [Xclip](https://github.com/astrand/xclip)
+- [Xsel](http://www.vergenet.net/~conrad/software/xsel/)
+
+Xclip or Xsel is used to interact with the clipboard on Linux systems. They are likely to be installed on your system already.
+
+| Arch                   | Ubuntu                   | Fedora                  |
+|------------------------|--------------------------|-------------------------|
+| `sudo pacman -S xclip` | `sudo apt install xclip` | `sudo dnf instal xclip` |
+| `sudo pacman -S xsel`  | `sudo apt install xsel`  | `sudo dnf instal xsel`  |
+
+#### Starting the project
 
 To start the project run the following command:
 ```bash
@@ -87,9 +99,6 @@ go run .
 > The first time you run the project it will download the required models and may take a few minutes to start.
 > 
 > The first request can take a few seconds to respond as the model is loaded into memory. The memory is released after five minutes of inactivity.
-
-#### Wayland
-Users running Wayland may experience issues with reading the text out of some applications, it is recommended to use Xorg.
 
 ## Developing
 
@@ -105,7 +114,6 @@ This project uses the stringer tool, this will generate a `<type>_string.go` fil
 ```bash
 make stringer
 ```
-
 
 ## Screenshots
 
