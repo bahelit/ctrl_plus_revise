@@ -12,7 +12,7 @@
 </div>
 
 * [Project overview](#project-overview)
-* [Starting Ctrl+Revise](#starting-ctrlrevise)
+* [Starting Ctrl+Revise](#building-from-source)
 * [Developing Ctrl+Revise](#developing-ctrlrevise)
 * [About Ctrl+Revise](#about-ctrlrevise)
 
@@ -94,7 +94,16 @@ Xclip or Xsel is used to interact with the clipboard on Linux systems. They are 
 | `sudo pacman -S xclip` | `sudo apt install xclip` | `sudo dnf instal xclip` |
 | `sudo pacman -S xsel`  | `sudo apt install xsel`  | `sudo dnf instal xsel`  |
 
-#### Starting the project
+#### Building from source
+
+##### Windows
+Please follow the Getting Started guide from the Fyne documentation [here](https://docs.fyne.io/started/) to setup MSYS2 and compile from within the MingW-w64 window.
+
+##### MacOS
+Set up the Xcode command line tools by opening a Terminal window and typing the following: `xcode-select --install`
+
+##### Linux
+Find the list of dependencies for your distro in the Fyne documentation [here](https://docs.fyne.io/started/)
 
 To start the project run the following command:
 ```bash
@@ -102,6 +111,8 @@ git clone https://github.com/bahelit/ctrl_plus_revise.git
 cd ctrl_plus_revise
 go run .
 ```
+
+
 
 > [!NOTE]
 > The first time you run the project it will download the required models and may take a few minutes to start.
@@ -137,10 +148,12 @@ make stringer
 * [ ] Add support for Flatpak under Wayland (clipboard not working)
 * [ ] Create Snap package
 * [ ] Create AppImage package
-* [ ] Windows, prevent console window from opening (maybe due to the logger)
+* [ ] Windows, prevent console window from opening
 * [ ] Improve UI
 * [ ] Improve Docker support
 * [ ] Improve model management
 * [X] Add more AI models
 * [ ] Image support (detect what is in the image)
+* [ ] Image OCR support (read text out of an image)
+* [ ] File and directory organizer (organize files and directories based on content)
 * [ ] Add chatbot feature
