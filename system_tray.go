@@ -333,21 +333,36 @@ func selectCopyActionDropDown() *widget.Select {
 
 func selectAIModelDropDown() *widget.Select {
 	combo := widget.NewSelect([]string{
-		BashBot.String(),
+		Llama3.String(),
 		CodeLlama.String(),
 		CodeLlama13b.String(),
+		CodeGemma.String(),
+		CodeGemma2b.String(),
 		Gemma.String(),
-		Llama3.String()},
+		Gemma2b.String(),
+		Gemma2.String(),
+		Mistral.String(),
+		Phi3.String()},
 		func(value string) {
 			switch value {
-			case BashBot.String():
-				selectedModel = BashBot
 			case CodeLlama.String():
 				selectedModel = CodeLlama
 			case CodeLlama13b.String():
 				selectedModel = CodeLlama13b
+			case CodeGemma.String():
+				selectedModel = CodeGemma
+			case CodeGemma2b.String():
+				selectedModel = CodeGemma2b
+			case DeepSeekCoder.String():
+				selectedModel = DeepSeekCoder
+			case DeepSeekCoderV2.String():
+				selectedModel = DeepSeekCoderV2
 			case Gemma.String():
 				selectedModel = Gemma
+			case Gemma2b.String():
+				selectedModel = Gemma2b
+			case Gemma2.String():
+				selectedModel = Gemma2
 			case Llama3.String():
 				selectedModel = Llama3
 			default:

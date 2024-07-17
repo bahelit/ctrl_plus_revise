@@ -11,11 +11,19 @@ import (
 type ModelName int
 
 const (
-	BashBot      ModelName = iota // bashbot:latest
-	CodeLlama                     // codellama:latest
-	CodeLlama13b                  // codellama:13b
-	Gemma                         // gemma:latest
-	Llama3                        // llama3:latest
+	Llama3          ModelName = iota // llama3:latest
+	CodeLlama                        // codellama:latest
+	CodeLlama13b                     // codellama:13b
+	CodeGemma                        // codegemma:latest
+	CodeGemma2b                      // codegemma:2b
+	DeepSeekCoder                    // deepseek-coder:latest
+	DeepSeekCoderV2                  // deepseek-coder-v2:latest
+	Gemma                            // gemma:latest
+	Gemma2b                          // gemma2b:latest
+	Gemma2                           // gemma2:latest
+	Llava                            // llava:latest
+	Mistral                          // mistral:latest
+	Phi3                             // phi3:latest
 )
 
 type Language string

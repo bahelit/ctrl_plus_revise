@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	xsel  = "xsel"
-	xclip = "xclip"
+	xsel        = "xsel"
+	xclip       = "xclip"
+	flatpakPath = "/run/host/bin/"
 )
 
 var (
@@ -27,8 +28,14 @@ var (
 	xselPasteArgs = []string{xsel, "--output", "--clipboard"}
 	xselCopyArgs  = []string{xsel, "--input", "--clipboard"}
 
+	xselPasteFlatpakArgs = []string{flatpakPath + xsel, "--output", "--clipboard"}
+	xselCopyFlatpakArgs  = []string{flatpakPath + xsel, "--input", "--clipboard"}
+
 	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
 	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
+
+	xclipPasteFlatpakArgs = []string{flatpakPath + xclip, "-out", "-selection", "clipboard"}
+	xclipCopyFlatpakArgs  = []string{flatpakPath + xclip, "-in", "-selection", "clipboard"}
 
 	errMissingCommands = errors.New("no clipboard utilities available. Please install xsel or xclip")
 )
@@ -40,6 +47,14 @@ func init() {
 	if _, err := exec.LookPath(xclip); err == nil {
 		slog.Info("Using xclip")
 		return
+	} else {
+		_, err = exec.LookPath(flatpakPath + xclip)
+		if err == nil {
+			pasteCmdArgs = xclipPasteFlatpakArgs
+			copyCmdArgs = xclipCopyFlatpakArgs
+			slog.Info("Using xclip from flatpak")
+			return
+		}
 	}
 
 	pasteCmdArgs = xselPasteArgs
@@ -48,9 +63,17 @@ func init() {
 	if _, err := exec.LookPath(xsel); err == nil {
 		slog.Info("Using xsel")
 		return
+	} else {
+		_, err = exec.LookPath(flatpakPath + xsel)
+		if err == nil {
+			pasteCmdArgs = xselPasteFlatpakArgs
+			copyCmdArgs = xselCopyFlatpakArgs
+			slog.Info("Using xsel from flatpak")
+			return
+		}
 	}
 
-	slog.Error("No clipboard utilities available. Please install xsel or xclip, or wl-clipboard for Wayland")
+	slog.Error("No clipboard utilities available. Please install xsel or xclip")
 	Unsupported = true
 }
 

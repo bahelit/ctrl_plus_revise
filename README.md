@@ -1,11 +1,20 @@
-# Ctrl+Revise
+<div align="center">
+  <p>
+    <h1>
+      <a href="https://github.com/bahelit/images/icon.png">
+        <img src="images/icon.png" alt="Ctrl+Revise"/>
+      </a>
+      <br />
+      Ctrl+Revise
+    </h1>
+    <h4>Powerful yet simple AI tool.</h4>
+  </p>
+</div>
 
 * [Project overview](#project-overview)
 * [Starting Ctrl+Revise](#starting-ctrlrevise)
 * [Developing Ctrl+Revise](#developing-ctrlrevise)
-* [Deploying Ctrl+Revise](#deploying-ctrlrevise)
 * [About Ctrl+Revise](#about-ctrlrevise)
-
 
 ## Overview
 
@@ -17,7 +26,6 @@ Ctrl+Revise uses keyboard shortcuts that when pressed have the AI act on the tex
 This tool is compatible Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
 
 The AI model runs locally on your machine, ensuring your privacy and data security.
-
 
 ## Features
 
@@ -124,3 +132,15 @@ make stringer
 ## About
 
 [**Ctrl+Revise**](https://ctrlplusrevise.com) is in early development and there are many features that are planned to be added. This project is open-source and you can contribute to it by submitting a pull request.
+
+## TODO
+* [ ] Add support for Flatpak under Wayland (clipboard not working)
+* [ ] Create Snap package
+* [ ] Create AppImage package
+* [ ] Windows, prevent console window from opening (maybe due to the logger)
+* [ ] Improve UI
+* [ ] Improve Docker support
+* [ ] Improve model management
+* [X] Add more AI models
+* [ ] Image support (detect what is in the image)
+* [ ] Add chatbot feature

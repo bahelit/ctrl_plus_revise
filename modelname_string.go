@@ -8,16 +8,24 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[BashBot-0]
+	_ = x[Llama3-0]
 	_ = x[CodeLlama-1]
 	_ = x[CodeLlama13b-2]
-	_ = x[Gemma-3]
-	_ = x[Llama3-4]
+	_ = x[CodeGemma-3]
+	_ = x[CodeGemma2b-4]
+	_ = x[DeepSeekCoder-5]
+	_ = x[DeepSeekCoderV2-6]
+	_ = x[Gemma-7]
+	_ = x[Gemma2b-8]
+	_ = x[Gemma2-9]
+	_ = x[Llava-10]
+	_ = x[Mistral-11]
+	_ = x[Phi3-12]
 }
 
-const _ModelName_name = "bashbot:latestcodellama:latestcodellama:13bgemma:latestllama3:latest"
+const _ModelName_name = "llama3:latestcodellama:latestcodellama:13bcodegemma:latestcodegemma:2bdeepseek-coder:latestdeepseek-coder-v2:latestgemma:latestgemma2b:latestgemma2:latestllava:latestmistral:latestphi3:latest"
 
-var _ModelName_index = [...]uint8{0, 14, 30, 43, 55, 68}
+var _ModelName_index = [...]uint8{0, 13, 29, 42, 58, 70, 91, 115, 127, 141, 154, 166, 180, 191}
 
 func (i ModelName) String() string {
 	if i < 0 || i >= ModelName(len(_ModelName_index)-1) {

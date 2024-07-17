@@ -9,19 +9,21 @@ branch: 46
 command: ctrl_plus_revise
 
 finish-args:
-  - --share=ipc # Share IPC namespace with the host (necessary for X11).
-  - --socket=fallback-x11
-  - --socket=wayland
   - --device=dri
+  - --device=input
+  - --share=ipc # Share IPC namespace with the host (necessary for X11).
   - --share=network
+  - --socket=x11
+  - --socket=wayland
   - --socket=pulseaudio
   - --socket=session-bus
 
   # Needed to support desktop notifications.
   - --talk-name=org.freedesktop.Notifications
 
-  # Allowing access to the home directory.
-  - --filesystem=home
+  - --filesystem=xdg-run/Clipboard
+  # Allowing access to the clipboard utilities.
+  - --filesystem=host-os:ro
 
 modules:
   - name: ollama
