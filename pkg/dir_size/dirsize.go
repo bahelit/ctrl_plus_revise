@@ -1,4 +1,4 @@
-package dirSize
+package dirsize
 
 import (
 	"errors"

@@ -73,7 +73,7 @@ func setupServices() bool {
 	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
 	if speakResponse {
 		// TODO: the audio files need to be cleaned up periodically.
-		dirInfo, _ := dirSize.GetDirInfo(os.DirFS("audio"))
+		dirInfo, _ := dirsize.GetDirInfo(os.DirFS("audio"))
 		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
 	}
 

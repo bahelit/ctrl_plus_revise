@@ -12,20 +12,19 @@ func _() {
 	_ = x[CodeLlama-1]
 	_ = x[CodeLlama13b-2]
 	_ = x[CodeGemma-3]
-	_ = x[CodeGemma2b-4]
-	_ = x[DeepSeekCoder-5]
-	_ = x[DeepSeekCoderV2-6]
-	_ = x[Gemma-7]
-	_ = x[Gemma2b-8]
-	_ = x[Gemma2-9]
-	_ = x[Llava-10]
-	_ = x[Mistral-11]
-	_ = x[Phi3-12]
+	_ = x[DeepSeekCoder-4]
+	_ = x[DeepSeekCoderV2-5]
+	_ = x[Gemma-6]
+	_ = x[Gemma2b-7]
+	_ = x[Gemma2-8]
+	_ = x[Llava-9]
+	_ = x[Mistral-10]
+	_ = x[Phi3-11]
 }
 
-const _ModelName_name = "llama3:latestcodellama:latestcodellama:13bcodegemma:latestcodegemma:2bdeepseek-coder:latestdeepseek-coder-v2:latestgemma:latestgemma2b:latestgemma2:latestllava:latestmistral:latestphi3:latest"
+const _ModelName_name = "llama3:latestcodellama:latestcodellama:13bcodegemma:7bdeepseek-coder:latestdeepseek-coder-v2:latestgemma:latestgemma:2bgemma2:latestllava:latestmistral:latestphi3:latest"
 
-var _ModelName_index = [...]uint8{0, 13, 29, 42, 58, 70, 91, 115, 127, 141, 154, 166, 180, 191}
+var _ModelName_index = [...]uint8{0, 13, 29, 42, 54, 75, 99, 111, 119, 132, 144, 158, 169}
 
 func (i ModelName) String() string {
 	if i < 0 || i >= ModelName(len(_ModelName_index)-1) {

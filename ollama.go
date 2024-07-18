@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"log/slog"
 
 	"github.com/ollama/ollama/api"
@@ -14,17 +15,26 @@ const (
 	Llama3          ModelName = iota // llama3:latest
 	CodeLlama                        // codellama:latest
 	CodeLlama13b                     // codellama:13b
-	CodeGemma                        // codegemma:latest
-	CodeGemma2b                      // codegemma:2b
+	CodeGemma                        // codegemma:7b
 	DeepSeekCoder                    // deepseek-coder:latest
 	DeepSeekCoderV2                  // deepseek-coder-v2:latest
 	Gemma                            // gemma:latest
-	Gemma2b                          // gemma2b:latest
+	Gemma2b                          // gemma:2b
 	Gemma2                           // gemma2:latest
 	Llava                            // llava:latest
 	Mistral                          // mistral:latest
 	Phi3                             // phi3:latest
 )
+
+// Memory usage in MB
+var memoryUsage = map[ModelName]bytesize.ByteSize{
+	CodeLlama:    5077 * bytesize.MB,
+	CodeLlama13b: 9055 * bytesize.MB,
+	CodeGemma:    6489 * bytesize.MB,
+	Gemma:        6490 * bytesize.MB,
+	Gemma2b:      2321 * bytesize.MB,
+	Llama3:       4980 * bytesize.MB,
+}
 
 type Language string
 
@@ -73,7 +83,7 @@ var promptToText = map[PromptMsg]promptText{
 		promptExtra: " No need to explain your list, just provide the main points in a list format."},
 	MakeItProfessional: {
 		prompt:      "Act as a writer. Read the following text carefully and revise it to present a more professional tone, ensuring accurate and proper usage of grammar and punctuation: ",
-		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text without telling me it is the revised text, in a clear and concise format with no explanation, output just the result."},
+		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text without telling me it is the revised text, in a clear and concise format with no explanation, output just the result."}, //nolint:lll long line
 	MakeHeadline: {
 		prompt:      "Act as a writer. Read the following text carefully and create a concise and attention-grabbing headline that summarizes its main idea or key point: ",
 		promptExtra: " Your headline should be no more than 5-7 words, yet effectively capture the essence of the text. Please submit your headline in the format below:\n\n[Headline]"},

@@ -150,6 +150,7 @@ make stringer
 * [ ] Create AppImage package
 * [ ] Windows, prevent console window from opening
 * [ ] Improve UI
+* [ ] Improve UI - show the model download progress
 * [ ] Improve Docker support
 * [ ] Improve model management
 * [X] Add more AI models

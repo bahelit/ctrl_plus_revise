@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
+	dirSize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
 )
 
 func check(e error) {

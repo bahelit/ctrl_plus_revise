@@ -337,7 +337,6 @@ func selectAIModelDropDown() *widget.Select {
 		CodeLlama.String(),
 		CodeLlama13b.String(),
 		CodeGemma.String(),
-		CodeGemma2b.String(),
 		Gemma.String(),
 		Gemma2b.String(),
 		Gemma2.String(),
@@ -351,8 +350,6 @@ func selectAIModelDropDown() *widget.Select {
 				selectedModel = CodeLlama13b
 			case CodeGemma.String():
 				selectedModel = CodeGemma
-			case CodeGemma2b.String():
-				selectedModel = CodeGemma2b
 			case DeepSeekCoder.String():
 				selectedModel = DeepSeekCoder
 			case DeepSeekCoderV2.String():
@@ -388,15 +385,16 @@ func selectTranslationFromDropDown() *widget.Select {
 		string(Chinese),
 		string(French),
 		string(German),
+		string(Italian),
 		string(Japanese),
 		string(Portuguese),
 		string(Russian),
 		string(Spanish)},
 		func(value string) {
 			guiApp.Preferences().SetString(currentFromLangKey, value)
-			err := selectedModelBinding.Set(int(selectedModel))
+			err := translationFromBinding.Set(selectedModel.String())
 			if err != nil {
-				slog.Error("Failed to set selectedModelBinding", "error", err)
+				slog.Error("Failed to set translationFromBinding", "error", err)
 			}
 		})
 	language := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
@@ -411,15 +409,16 @@ func selectTranslationToDropDown() *widget.Select {
 		string(Chinese),
 		string(French),
 		string(German),
+		string(Italian),
 		string(Japanese),
 		string(Portuguese),
 		string(Russian),
 		string(English)},
 		func(value string) {
 			guiApp.Preferences().SetString(currentToLangKey, value)
-			err := selectedModelBinding.Set(int(selectedModel))
+			err := translationToBinding.Set(selectedModel.String())
 			if err != nil {
-				slog.Error("Failed to set selectedModelBinding", "error", err)
+				slog.Error("Failed to set translationToBinding", "error", err)
 			}
 		})
 	language := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
@@ -536,11 +535,13 @@ func askQuestion(guiApp fyne.App) {
 			return
 		}
 		loadingScreen := loadingScreenWithMessage(thinkingMsg,
-			"Asking question with model: "+selectedPrompt.String()+"...")
+			"Asking question with model: "+selectedModel.String()+"...")
 		loadingScreen.Show()
 		response, err := askAI(ollamaClient, selectedModel, s)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
 		}
 		loadingScreen.Hide()
 		questionPopUp(guiApp, s, &response)
@@ -564,11 +565,13 @@ func askQuestion(guiApp fyne.App) {
 			return
 		}
 		loadingScreen := loadingScreenWithMessage(thinkingMsg,
-			"Asking question with model: "+selectedPrompt.String()+"...")
+			"Asking question with model: "+selectedModel.String()+"...")
 		loadingScreen.Show()
 		response, err := askAI(ollamaClient, selectedModel, text.Text)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
 		}
 		loadingScreen.Hide()
 		questionPopUp(guiApp, text.Text, &response)
