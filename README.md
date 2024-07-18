@@ -148,6 +148,7 @@ make stringer
 * [ ] Add support for Flatpak under Wayland (clipboard not working)
 * [ ] Create Snap package
 * [ ] Create AppImage package
+* [X] Pull model after changing selection
 * [ ] Windows, prevent console window from opening
 * [ ] Improve UI
 * [ ] Improve UI - show the model download progress

@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"log/slog"
+	"time"
 
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/ollama/ollama/api"
 )
 
@@ -28,12 +29,16 @@ const (
 
 // Memory usage in MB
 var memoryUsage = map[ModelName]bytesize.ByteSize{
-	CodeLlama:    5077 * bytesize.MB,
-	CodeLlama13b: 9055 * bytesize.MB,
-	CodeGemma:    6489 * bytesize.MB,
-	Gemma:        6490 * bytesize.MB,
-	Gemma2b:      2321 * bytesize.MB,
-	Llama3:       4980 * bytesize.MB,
+	CodeLlama:       5077 * bytesize.MB,
+	CodeLlama13b:    9055 * bytesize.MB,
+	CodeGemma:       6489 * bytesize.MB,
+	DeepSeekCoder:   1478 * bytesize.MB,
+	DeepSeekCoderV2: 9462 * bytesize.MB,
+	Gemma:           6490 * bytesize.MB,
+	Gemma2b:         2321 * bytesize.MB,
+	Gemma2:          6683 * bytesize.MB,
+	Llama3:          4980 * bytesize.MB,
+	Mistral:         4615 * bytesize.MB,
 }
 
 type Language string
@@ -214,6 +219,12 @@ func pullModel(model ModelName, update bool) error {
 	req := &api.PullRequest{
 		Model: model.String(),
 	}
+	pulling := loadingScreenWithMessage("Downloading Model", "fetching model: "+model.String())
+	pulling.Show()
+	defer func() {
+		time.Sleep(250 * time.Millisecond)
+		pulling.Hide()
+	}()
 
 	slog.Debug("Pulling model", "model", model.String())
 	found, err := findModel(ctx, model)

@@ -172,7 +172,6 @@ func handleUserShortcutKeyPressed() {
 		slog.Info("Clipboard content is the same as last, skipping")
 		return
 	}
-	slog.Info("Sending text to ai", "clippy", clippy)
 
 	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
 	loadingScreen := loadingScreenWithMessage(thinkingMsg,
@@ -183,6 +182,7 @@ func handleUserShortcutKeyPressed() {
 	if err != nil {
 		// TODO: Implement error handling, tell user to restart ollama, maybe we can restart ollama here?
 		slog.Error("Failed to communicate with Ollama", "error", err)
+		loadingScreen.Hide()
 		return
 	}
 	loadingScreen.Hide()
@@ -246,6 +246,8 @@ func handleAskKeyPressed() {
 	generated, err := askAI(ollamaClient, ModelName(model), clippy)
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
+		loadingScreen.Hide()
+		return
 	}
 	loadingScreen.Hide()
 
@@ -313,6 +315,8 @@ func handleTranslatePressed() {
 	generated, err := askAIToTranslate(ollamaClient, ModelName(model), clippy, Language(fromLang), Language(toLang))
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
+		loadingScreen.Hide()
+		return
 	}
 	loadingScreen.Hide()
 

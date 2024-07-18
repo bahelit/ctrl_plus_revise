@@ -332,35 +332,67 @@ func selectCopyActionDropDown() *widget.Select {
 }
 
 func selectAIModelDropDown() *widget.Select {
+	var (
+		llama3          = "Llama3 - RAM Usage: " + memoryUsage[Llama3].String() + " (Default)"
+		codeLlama       = "CodeLlama - RAM Usage: " + memoryUsage[CodeLlama].String()
+		codeLlama13b    = "CodeLlama13b - RAM Usage: " + memoryUsage[CodeLlama13b].String()
+		codeGemma       = "CodeGemma - RAM Usage: " + memoryUsage[CodeGemma].String()
+		deepSeekCoder   = "DeepSeekCoder. - RAM Usage: " + memoryUsage[DeepSeekCoder].String()
+		deepSeekCoderV2 = "DeepSeekCoderV2 - RAM Usage: " + memoryUsage[DeepSeekCoderV2].String()
+		gemma           = "Gemma - RAM Usage: " + memoryUsage[Gemma].String()
+		gemma2b         = "Gemma2b - RAM Usage: " + memoryUsage[Gemma2b].String()
+		gemma2          = "Gemma2 - RAM Usage: " + memoryUsage[Gemma2].String()
+		mistral         = "Mistral - RAM Usage: " + memoryUsage[Mistral].String()
+		phi3            = "Phi3 - RAM Usage: " + memoryUsage[Phi3].String()
+	)
+	var itemAndText = map[ModelName]string{
+		Llama3:          llama3,
+		CodeLlama:       codeLlama,
+		CodeLlama13b:    codeLlama13b,
+		CodeGemma:       codeGemma,
+		DeepSeekCoder:   deepSeekCoder,
+		DeepSeekCoderV2: deepSeekCoderV2,
+		Gemma:           gemma,
+		Gemma2b:         gemma2b,
+		Gemma2:          gemma2,
+		Mistral:         mistral,
+		Phi3:            phi3,
+	}
 	combo := widget.NewSelect([]string{
-		Llama3.String(),
-		CodeLlama.String(),
-		CodeLlama13b.String(),
-		CodeGemma.String(),
-		Gemma.String(),
-		Gemma2b.String(),
-		Gemma2.String(),
-		Mistral.String(),
-		Phi3.String()},
+		llama3,
+		codeLlama,
+		codeLlama13b,
+		codeGemma,
+		deepSeekCoder,
+		deepSeekCoderV2,
+		gemma,
+		gemma2b,
+		gemma2,
+		mistral,
+		phi3},
 		func(value string) {
 			switch value {
-			case CodeLlama.String():
+			case llama3:
+				selectedModel = Llama3
+			case codeLlama:
 				selectedModel = CodeLlama
-			case CodeLlama13b.String():
+			case codeLlama13b:
 				selectedModel = CodeLlama13b
-			case CodeGemma.String():
+			case codeGemma:
 				selectedModel = CodeGemma
-			case DeepSeekCoder.String():
+			case deepSeekCoder:
 				selectedModel = DeepSeekCoder
-			case DeepSeekCoderV2.String():
+			case deepSeekCoderV2:
 				selectedModel = DeepSeekCoderV2
-			case Gemma.String():
+			case gemma:
 				selectedModel = Gemma
-			case Gemma2b.String():
+			case gemma2b:
 				selectedModel = Gemma2b
-			case Gemma2.String():
+			case gemma2:
 				selectedModel = Gemma2
-			case Llama3.String():
+			case mistral:
+				selectedModel = Mistral
+			case phi3:
 				selectedModel = Llama3
 			default:
 				slog.Error("Invalid selection", "value", value)
@@ -371,9 +403,15 @@ func selectAIModelDropDown() *widget.Select {
 			if err != nil {
 				slog.Error("Failed to set selectedModelBinding", "error", err)
 			}
+			slog.Debug("Selected model", "model", selectedModel)
+			if ollamaClient != nil {
+				_ = pullModel(selectedModel, false)
+			}
 		})
 	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
-	combo.SetSelected(ModelName(model).String())
+	selection := itemAndText[ModelName(model)]
+	slog.Debug("Selected model", "model", selection)
+	combo.SetSelected(selection)
 
 	return combo
 }
