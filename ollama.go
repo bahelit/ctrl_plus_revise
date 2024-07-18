@@ -39,6 +39,7 @@ var memoryUsage = map[ModelName]bytesize.ByteSize{
 	Gemma2:          6683 * bytesize.MB,
 	Llama3:          4980 * bytesize.MB,
 	Mistral:         4615 * bytesize.MB,
+	Phi3:            3269 * bytesize.MB,
 }
 
 type Language string

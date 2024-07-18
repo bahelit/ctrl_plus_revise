@@ -393,7 +393,7 @@ func selectAIModelDropDown() *widget.Select {
 			case mistral:
 				selectedModel = Mistral
 			case phi3:
-				selectedModel = Llama3
+				selectedModel = Phi3
 			default:
 				slog.Error("Invalid selection", "value", value)
 				selectedModel = Llama3
