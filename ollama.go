@@ -223,7 +223,7 @@ func pullModel(model ModelName, update bool) error {
 	pulling := loadingScreenWithMessage("Downloading Model", "fetching model: "+model.String())
 	pulling.Show()
 	defer func() {
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		pulling.Hide()
 	}()
 

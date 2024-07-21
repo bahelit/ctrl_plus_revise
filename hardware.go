@@ -71,7 +71,7 @@ func detectProcessingDevice() processingDevice {
 			foundGPU = amdGPU
 			break
 		} else if card.DeviceInfo.Driver == nvidiaDriver {
-			slog.Info("Detected AMD GPU", "Product", card.DeviceInfo.Product.Name)
+			slog.Info("Detected Nvidia GPU", "Product", card.DeviceInfo.Product.Name)
 			foundGPU = nvidiaGPU
 			break
 		}
