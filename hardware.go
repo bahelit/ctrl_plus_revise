@@ -59,8 +59,13 @@ func detectProcessingDevice() processingDevice {
 	foundGPU := noGPU
 
 	for _, card := range gpu.GraphicsCards {
-		slog.Debug("GPU Probe", "Driver", card.DeviceInfo.Driver, "Product", card.DeviceInfo.Product.Name)
 		// TODO: test on Nvidia system
+		if card != nil && card.DeviceInfo != nil {
+			slog.Debug("GPU Probe", "Driver", card.DeviceInfo.Driver, "Product", card.DeviceInfo.Product.Name)
+		} else {
+			slog.Warn("Failed to get GPU info")
+			continue
+		}
 		if card.DeviceInfo.Driver == amdDriver {
 			slog.Info("Detected AMD GPU", "Product", card.DeviceInfo.Product.Name)
 			foundGPU = amdGPU
