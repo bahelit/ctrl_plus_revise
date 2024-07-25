@@ -100,7 +100,9 @@ Xclip or Xsel is used to interact with the clipboard on Linux systems. They are 
 Please follow the Getting Started guide from the Fyne documentation [here](https://docs.fyne.io/started/) to setup MSYS2 and compile from within the MingW-w64 window.
 
 ##### MacOS
-Set up the Xcode command line tools by opening a Terminal window and typing the following: `xcode-select --install`
+Set up the Xcode command line tools by opening a Terminal window and typing the following:
+
+`xcode-select --install`
 
 ##### Linux
 Find the list of dependencies for your distro in the Fyne documentation [here](https://docs.fyne.io/started/)

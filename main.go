@@ -12,18 +12,18 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/x/fyne/theme"
-	ollama "github.com/ollama/ollama/api"
+	ollamaApi "github.com/ollama/ollama/api"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
-	ollama2 "github.com/bahelit/ctrl_plus_revise/internal/ollama"
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
 // TODO: Refactor to remove some global variables
 var (
-	ollamaClient           *ollama.Client
-	selectedModel          = ollama2.Llama3
-	selectedPrompt         = ollama2.CorrectGrammar
+	ollamaClient           *ollamaApi.Client
+	selectedModel          = ollama.Llama3
+	selectedPrompt         = ollama.CorrectGrammar
 	selectedModelBinding   binding.Int
 	translationToBinding   binding.String
 	translationFromBinding binding.String
