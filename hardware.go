@@ -13,25 +13,15 @@ const (
 	nvidiaDriver = "nvidia"
 )
 
-// processingDevice Processing devices used for AI inference
+// gpu Processing devices used for AI inference
 //
-//go:generate stringer -linecomment -type=processingDevice
-type processingDevice int
+//go:generate stringer -linecomment -type=gpu
+type gpu int
 
 const (
-	amdGPU    processingDevice = iota // AMD
-	nvidiaGPU                         // Nvidia
-	noGPU                             // CPU
-)
-
-// gpuModel GPUs that have been tested
-//
-//go:generate stringer -linecomment -type=gpuModel
-type gpuModel int
-
-const (
-	amdProductNavi10 gpuModel = iota // Navi 10 [Radeon RX 5600 OEM/5600 XT / 5700/5700 XT]
-	amdProductNavi21                 // Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]
+	amdGPU    gpu = iota // AMD
+	nvidiaGPU            // Nvidia
+	noGPU                // CPU
 )
 
 // DetectMemory detects the memory of the system
@@ -50,7 +40,7 @@ func detectMemory() {
 	slog.Info("System Memory", "Total", total, "Available", usable)
 }
 
-func detectProcessingDevice() processingDevice {
+func detectProcessingDevice() gpu {
 	gpu, err := ghw.GPU()
 	if err != nil {
 		slog.Info("Error getting GPU info", "error", err)
@@ -61,7 +51,7 @@ func detectProcessingDevice() processingDevice {
 	for _, card := range gpu.GraphicsCards {
 		// TODO: test on Nvidia system
 		if card != nil && card.DeviceInfo != nil {
-			slog.Debug("GPU Probe", "Driver", card.DeviceInfo.Driver, "Product", card.DeviceInfo.Product.Name)
+			slog.Info("GPU Probe", "Driver", card.DeviceInfo.Driver, "Product", card.DeviceInfo.Product.Name)
 		} else {
 			slog.Warn("Failed to get GPU info")
 			continue

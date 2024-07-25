@@ -2,12 +2,20 @@ package main
 
 import (
 	"crypto/sha256"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui"
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
+	dirsize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
+	htgotts "github.com/hegedustibor/htgo-tts"
+	"github.com/hegedustibor/htgo-tts/handlers"
+	"github.com/hegedustibor/htgo-tts/voices"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/pkg/clipboard"
 	"github.com/bahelit/ctrl_plus_revise/pkg/throttle"
 )
@@ -18,6 +26,7 @@ const (
 
 var (
 	th                    = throttle.NewThrottle(1)
+	speech                *htgotts.Speech
 	lastClipboardContent  [32]byte
 	lastKeyPressTime      = time.Now()
 	waitBetweenKeyPresses = 1 * time.Second
@@ -25,9 +34,9 @@ var (
 	firstRun              = true
 )
 
-// registerHotkeys registers the hotkeys for the application
+// RegisterHotkeys registers the hotkeys for the application
 // TODO: Allow users changes the mappings
-func registerHotkeys() {
+func RegisterHotkeys() {
 	hook.Register(hook.KeyDown, []string{"a", "alt"}, func(e hook.Event) {
 		slog.Debug("askKey has been pressed", "event", e)
 		if time.Since(lastKeyPressTime) < waitBetweenKeyPresses {
@@ -82,6 +91,7 @@ func registerHotkeys() {
 		handleTranslatePressed()
 		lastKeyPressTime = time.Now()
 	})
+	initSpeech()
 	slog.Info("Registered hotkeys")
 
 	s := hook.Start()
@@ -94,14 +104,25 @@ func registerHotkeys() {
 	}*/
 }
 
+func initSpeech() {
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
+	if speakResponse {
+		// TODO: the audio files need to be cleaned up periodically.
+		speech = &htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+		dirInfo, _ := dirsize.GetDirInfo(os.DirFS("audio"))
+		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
+		_ = speech.Speak("")
+	}
+}
+
 func handleCyclePromptKeyPressed() {
 	err := th.Do()
 	if err != nil {
 		slog.Error("Failed to create throttle", "error", err)
 	}
 	defer th.Done(err)
-	if int(selectedPrompt) == len(promptToText)-1 {
-		selectedPrompt = CorrectGrammar
+	if int(selectedPrompt) == len(ollama.PromptToText)-1 {
+		selectedPrompt = ollama.CorrectGrammar
 	} else {
 		selectedPrompt++
 	}
@@ -110,8 +131,8 @@ func handleCyclePromptKeyPressed() {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 
 	}
-	updateDropDownMenus()
-	changedPromptNotification()
+	UpdateDropDownMenus()
+	ChangedPromptNotification()
 	time.Sleep(1 * time.Second)
 }
 
@@ -121,7 +142,7 @@ func handleReadTextPressed() {
 		slog.Error("Failed to create throttle", "error", err)
 	}
 	defer th.Done(err)
-	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if !speakAIResponse {
 		slog.Info("Reading text aloud is disabled", "speakAIResponse", speakAIResponse)
 		return
@@ -129,14 +150,18 @@ func handleReadTextPressed() {
 
 	err = copyCommand()
 	if err != nil {
-		_ = speech.Speak("Failed to copy text")
+		if speech != nil {
+			_ = speech.Speak("Failed to copy text")
+		}
 		return
 	}
 
 	clippy, err := clipboard.ReadAll()
 	if err != nil {
 		slog.Error("Failed to read clipboard", "error", err)
-		_ = speech.Speak("Failed to read clipboard")
+		if speech != nil {
+			_ = speech.Speak("Failed to read clipboard")
+		}
 		return
 	}
 
@@ -173,12 +198,12 @@ func handleUserShortcutKeyPressed() {
 		return
 	}
 
-	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
-	loadingScreen := loadingScreenWithMessage(thinkingMsg,
-		"Using model: "+ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+		"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
 	loadingScreen.Show()
 
-	generated, err := askAIWithPromptMsg(ollamaClient, selectedPrompt, ModelName(model), clippy)
+	generated, err := ollama.AskAIWithPromptMsg(ollamaClient, selectedPrompt, ollama.ModelName(model), clippy)
 	if err != nil {
 		// TODO: Implement error handling, tell user to restart ollama, maybe we can restart ollama here?
 		slog.Error("Failed to communicate with Ollama", "error", err)
@@ -196,16 +221,21 @@ func handleUserShortcutKeyPressed() {
 		return
 	}
 
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakResponse {
-		speakErr := speech.Speak(generated.Response)
-		if speakErr != nil {
-			slog.Error("Failed to speak", "error", speakErr)
+		if speech == nil {
+			initSpeech()
+		}
+		if speech != nil {
+			speakErr := speech.Speak(generated.Response)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
 		}
 	}
 
 	// Send a paste command to the operating system
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
 	if replaceText {
 		err = pasteCommand()
 		if err != nil {
@@ -238,12 +268,12 @@ func handleAskKeyPressed() {
 		return
 	}
 
-	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
-	loadingScreen := loadingScreenWithMessage(thinkingMsg,
-		"Asking question with model: "+ModelName(model).String())
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+		"Asking question with model: "+ollama.ModelName(model).String())
 	loadingScreen.Show()
 
-	generated, err := askAI(ollamaClient, ModelName(model), clippy)
+	generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), clippy)
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
 		loadingScreen.Hide()
@@ -259,7 +289,7 @@ func handleAskKeyPressed() {
 	lastClipboardContent = sha256.Sum256([]byte(generated.Response))
 
 	// Send a paste command to the operating system
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
 	if replaceText {
 		err = pasteCommand()
 		if err != nil {
@@ -267,11 +297,16 @@ func handleAskKeyPressed() {
 		}
 	}
 
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakResponse {
-		speakErr := speech.Speak(generated.Response)
-		if speakErr != nil {
-			slog.Error("Failed to speak", "error", speakErr)
+		if speech == nil {
+			initSpeech()
+		}
+		if speech != nil {
+			speakErr := speech.Speak(generated.Response)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
 		}
 	}
 }
@@ -303,16 +338,16 @@ func handleTranslatePressed() {
 		return
 	}
 
-	fromLang := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
-	toLang := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
+	fromLang := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
+	toLang := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 
-	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
-	loadingScreen := loadingScreenWithMessage(thinkingMsg,
-		"Translating with model: "+ModelName(model).String()+"...")
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+		"Translating with model: "+ollama.ModelName(model).String()+"...")
 	loadingScreen.Show()
 
 	slog.Info("Translating text", "fromLang", fromLang, "toLang", toLang)
-	generated, err := askAIToTranslate(ollamaClient, ModelName(model), clippy, Language(fromLang), Language(toLang))
+	generated, err := ollama.AskAIToTranslate(ollamaClient, ollama.ModelName(model), clippy, ollama.Language(fromLang), ollama.Language(toLang))
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
 		loadingScreen.Hide()
@@ -327,16 +362,21 @@ func handleTranslatePressed() {
 	}
 	lastClipboardContent = sha256.Sum256([]byte(generated.Response))
 
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakResponse {
-		speakErr := speech.Speak(generated.Response)
-		if speakErr != nil {
-			slog.Error("Failed to speak", "error", speakErr)
+		if speech == nil {
+			initSpeech()
+		}
+		if speech != nil {
+			speakErr := speech.Speak(generated.Response)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
 		}
 	}
 
 	// Send a paste command to the operating system
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
+	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
 	if replaceText {
 		err = pasteCommand()
 		if err != nil {

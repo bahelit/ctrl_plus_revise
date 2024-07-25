@@ -12,40 +12,37 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/x/fyne/theme"
-	docker "github.com/docker/docker/client"
-	htgotts "github.com/hegedustibor/htgo-tts"
 	ollama "github.com/ollama/ollama/api"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/gui"
+	ollama2 "github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
 // TODO: Refactor to remove some global variables
 var (
-	dockerClient           *docker.Client
 	ollamaClient           *ollama.Client
-	selectedModel          = Llama3
-	selectedPrompt         = CorrectGrammar
+	selectedModel          = ollama2.Llama3
+	selectedPrompt         = ollama2.CorrectGrammar
 	selectedModelBinding   binding.Int
 	translationToBinding   binding.String
 	translationFromBinding binding.String
 	selectedPromptBinding  binding.String
 	guiApp                 fyne.App
-	containerID            string
 	ollamaPID              int
-	speech                 htgotts.Speech
 	stopOllamaOnShutDown   = false
 )
 
 func main() {
-	slog.Info("Starting Ctr+Revise GUI Service...", "Version", version.Version, "Compiler", runtime.Version())
+	slog.Info("Starting Ctr+Revise gui Service...", "Version", version.Version, "Compiler", runtime.Version())
 	guiApp = app.NewWithID("com.bahelit.ctrl_plus_revise")
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
 
 	// Prepare the loading screen and system tray
-	loadIcon()
-	startupWindow := startupScreen()
-	sysTray := setupSysTray(guiApp)
-	if guiApp.Preferences().BoolWithFallback(showStartWindowKey, true) {
+	LoadIcon(guiApp)
+	startupWindow := gui.StartupScreen(guiApp)
+	sysTray := SetupSysTray(guiApp)
+	if guiApp.Preferences().BoolWithFallback(ShowStartWindowKey, true) {
 		slog.Debug("Hiding start window")
 		sysTray.Show()
 		startupWindow.Show()
@@ -67,25 +64,25 @@ func main() {
 	sayHello()
 
 	// Listen for global hotkeys
-	go registerHotkeys()
+	go RegisterHotkeys()
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func(d *docker.Client, p int) {
+	go func(p int) {
 		<-c
 		slog.Info("Received shutdown signal")
-		handleShutdown(d, p)
+		handleShutdown(p)
 		os.Exit(0)
-	}(dockerClient, ollamaPID)
-	defer func(d *docker.Client, p int) {
+	}(ollamaPID)
+	defer func(p int) {
 		slog.Info("Shutting down")
 		signal.Stop(c)
 		close(c)
-		handleShutdown(d, p)
-	}(dockerClient, ollamaPID)
+		handleShutdown(p)
+	}(ollamaPID)
 
 	slog.Info("Ctrl+Revise is ready to help you!")
-	// Run the GUI event loop
+	// Run the gui event loop
 	guiApp.Run()
 }

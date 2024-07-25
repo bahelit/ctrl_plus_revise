@@ -8,20 +8,15 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"github.com/docker/docker/client"
-	"github.com/hegedustibor/htgo-tts"
-	"github.com/hegedustibor/htgo-tts/handlers"
-	"github.com/hegedustibor/htgo-tts/voices"
-
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
-	"github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
+	"github.com/bahelit/ctrl_plus_revise/internal/docker"
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 )
 
 func sayHello() {
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakResponse {
 		go func() {
-			prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+			prompt := guiApp.Preferences().StringWithFallback(CurrentPromptKey, ollama.CorrectGrammar.String())
 			_ = speech.Speak("")
 			speakErr := speech.Speak("Control Plus Revise is set to: " + prompt)
 			if speakErr != nil {
@@ -33,8 +28,8 @@ func sayHello() {
 
 func fetchModel() {
 	// Pull the model on startup, will pull updated model if available
-	model := ModelName(guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3)))
-	err := pullModel(model, false)
+	model := ollama.ModelName(guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3)))
+	err := PullModelWrapper(model, false)
 	if err != nil {
 		slog.Error("Failed to pull model", "error", err)
 		guiApp.SendNotification(&fyne.Notification{
@@ -46,14 +41,12 @@ func fetchModel() {
 	}
 }
 
-func handleShutdown(d *client.Client, p int) {
-	stopOllamaOnShutDown = guiApp.Preferences().BoolWithFallback(stopOllamaOnShutDownKey, true)
-	useDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, true)
+func handleShutdown(p int) {
+	stopOllamaOnShutDown = guiApp.Preferences().BoolWithFallback(StopOllamaOnShutDownKey, true)
+	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, true)
 	if stopOllamaOnShutDown {
 		if useDocker {
-			if d != nil {
-				stopOllamaContainer(d)
-			}
+			docker.StopOllamaContainer()
 		} else {
 			if p != 0 {
 				stopOllama(p)
@@ -67,20 +60,11 @@ func handleShutdown(d *client.Client, p int) {
 func setupServices() bool {
 	connectedToOllama := false
 	var err error
-	// Start the speech handler
-	speech = htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
-	guiApp.Preferences().SetBool(speakAIResponseKey, false)
-	speakResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
-	if speakResponse {
-		// TODO: the audio files need to be cleaned up periodically.
-		dirInfo, _ := dirsize.GetDirInfo(os.DirFS("audio"))
-		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
-	}
 
 	heartBeatCtx, heartBeatCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer heartBeatCancel()
 	// Start communication with the AI
-	ollamaClient = connectToOllama()
+	ollamaClient = ollama.ConnectToOllama()
 	err = ollamaClient.Heartbeat(heartBeatCtx)
 	if err == nil {
 		slog.Info("Connected to Ollama")
@@ -94,49 +78,15 @@ func setupServices() bool {
 		slog.Error("Ollama heartbeat timed out")
 	}
 
-	useDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, false)
+	// Ollama isn't running, should we start it with Docker?
+	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
 	if useDocker {
-		dockerClient, err = connectToDocker()
-		if err != nil {
-			slog.Error("Failed to connect to Docker", "error", err)
-		}
-
 		slog.Info("Starting Ollama container")
-		return setupDocker()
+		return docker.SetupDocker()
 	}
-
 	slog.Info("Starting Ollama")
 	// Start Ollama locally
 	return startOllama()
-}
-
-func setupDocker() (connectedToOllama bool) {
-	connectedToOllama = false
-	pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer pingCancel()
-	ping, err := dockerClient.Ping(pingCtx)
-	if err != nil {
-		slog.Error("Failed to connect to Docker", "error", err)
-		pingCancel()
-		return connectedToOllama
-	}
-	if <-pingCtx.Done(); true {
-		slog.Error("Timed out trying to connect to Docker")
-	}
-	slog.Info("Connected to Docker", "Operating_System", ping.OSType)
-
-	// If we made it hear we can talk to docker but don't have a connection to Ollama
-	slog.Info("Starting Ollama container")
-	// Check Docker containers
-	containerID, err = startOllamaContainer(dockerClient)
-	if err != nil {
-		return connectedToOllama
-	}
-	if containerID != "" {
-		connectedToOllama = true
-		return connectedToOllama
-	}
-	return connectedToOllama
 }
 
 func startOllama() (connectedToOllama bool) {
@@ -160,7 +110,7 @@ func startOllama() (connectedToOllama bool) {
 	ollamaPID = ollamaServe.Process.Pid
 	slog.Info("Started Ollama", "pid", ollamaPID)
 
-	ollamaClient = connectToOllama()
+	ollamaClient = ollama.ConnectToOllama()
 	if ollamaClient != nil {
 		connectedToOllama = true
 	}

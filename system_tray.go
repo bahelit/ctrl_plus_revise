@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"log/slog"
 	"os"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,21 +13,24 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/layout"
+	"github.com/ollama/ollama/api"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/docker"
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
 const (
-	replaceHighlightedText  = "replaceHighlightedText"
-	speakAIResponseKey      = "speakAIResponseKey"
-	showStartWindowKey      = "showStartWindow"
+	ReplaceHighlightedText  = "ReplaceHighlightedText"
+	SpeakAIResponseKey      = "SpeakAIResponseKey"
+	ShowStartWindowKey      = "showStartWindow"
 	firstRunKey             = "firstRun"
-	currentPromptKey        = "lastPrompt"
-	currentModelKey         = "lastModel"
-	currentFromLangKey      = "fromLang"
-	currentToLangKey        = "toLang"
-	stopOllamaOnShutDownKey = "stopOllamaOnShutDown"
-	useDockerKey            = "useDocker"
+	CurrentPromptKey        = "lastPrompt"
+	CurrentModelKey         = "lastModel"
+	CurrentFromLangKey      = "fromLang"
+	CurrentToLangKey        = "toLang"
+	StopOllamaOnShutDownKey = "stopOllamaOnShutDown"
+	UseDockerKey            = "useDocker"
 )
 
 var (
@@ -33,7 +38,7 @@ var (
 	aiModelDropdown  *widget.Select
 )
 
-func setupSysTray(guiApp fyne.App) fyne.Window {
+func SetupSysTray(guiApp fyne.App) fyne.Window {
 	err := setBindingVariables()
 	if err != nil {
 		slog.Error("Failed to set binding variables", "error", err)
@@ -126,7 +131,7 @@ func setupSysTray(guiApp fyne.App) fyne.Window {
 	return sysTray
 }
 
-func loadIcon() {
+func LoadIcon(guiApp fyne.App) {
 	var (
 		icon         fyne.Resource
 		errLocation1 error
@@ -156,13 +161,13 @@ func mainWindowText() *fyne.Container {
 }
 
 func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
-	openStartWindow := guiApp.Preferences().BoolWithFallback(showStartWindowKey, true)
+	openStartWindow := guiApp.Preferences().BoolWithFallback(ShowStartWindowKey, true)
 	startUpCheck := widget.NewCheck("Show this window on startup", func(b bool) {
 		if b == false {
 			slog.Debug("Hiding start window")
-			guiApp.Preferences().SetBool(showStartWindowKey, false)
+			guiApp.Preferences().SetBool(ShowStartWindowKey, false)
 		} else if b == true {
-			guiApp.Preferences().SetBool(showStartWindowKey, true)
+			guiApp.Preferences().SetBool(ShowStartWindowKey, true)
 			slog.Debug("Showing start window")
 		}
 	})
@@ -171,12 +176,12 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 }
 
 func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
-	replaceText := guiApp.Preferences().BoolWithFallback(replaceHighlightedText, true)
-	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	runOnCopy := widget.NewCheck("Auto paste text with AI response", func(b bool) {
 		if b == false {
 			slog.Debug("Replace highlighted checkbox is off")
-			guiApp.Preferences().SetBool(replaceHighlightedText, false)
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
 			if speakAIResponse {
 				go func() {
 					speakErr := speech.Speak("Highlighted text will be appended with an AI response.")
@@ -187,7 +192,7 @@ func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
 			}
 		} else if b == true {
 			slog.Debug("Replace highlighted checkbox is on")
-			guiApp.Preferences().SetBool(replaceHighlightedText, true)
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, true)
 			if speakAIResponse {
 				go func() {
 					speakErr := speech.Speak("Highlighted text will be replaced with AI response.")
@@ -203,11 +208,11 @@ func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
 }
 
 func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
-	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	speakAI := widget.NewCheck("Speak AI through speakers", func(b bool) {
 		if b == false {
 			slog.Debug("Turning off Speech mode")
-			guiApp.Preferences().SetBool(speakAIResponseKey, false)
+			guiApp.Preferences().SetBool(SpeakAIResponseKey, false)
 			go func() {
 				speakErr := speech.Speak("Turning off Speech mode.")
 				if speakErr != nil {
@@ -216,7 +221,7 @@ func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
 			}()
 		} else if b == true {
 			slog.Debug("Turning on Speech mode")
-			guiApp.Preferences().SetBool(speakAIResponseKey, true)
+			guiApp.Preferences().SetBool(SpeakAIResponseKey, true)
 			go func() {
 				speakErr := speech.Speak("Turning on Speech mode.")
 				if speakErr != nil {
@@ -230,16 +235,16 @@ func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
 }
 
 func useDockerCheckBox(guiApp fyne.App) *widget.Check {
-	userDocker := guiApp.Preferences().BoolWithFallback(useDockerKey, false)
+	userDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
 	userDockerCheck := widget.NewCheck("Run AI in Docker", func(b bool) {
 		if b == false {
 			slog.Debug("Not using Docker")
-			guiApp.Preferences().SetBool(useDockerKey, false)
-			stopOllamaContainer(dockerClient)
+			guiApp.Preferences().SetBool(UseDockerKey, false)
+			docker.StopOllamaContainer()
 			gotConnected := setupServices()
 			if !gotConnected {
 				go func() {
-					gotConnected := setupServices()
+					gotConnected = setupServices()
 					if !gotConnected {
 						slog.Error("Failed to connect to or start Ollama container")
 						guiApp.SendNotification(&fyne.Notification{
@@ -259,10 +264,10 @@ func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 			}
 		} else if b == true {
 			slog.Debug("Using Docker")
-			guiApp.Preferences().SetBool(useDockerKey, true)
+			guiApp.Preferences().SetBool(UseDockerKey, true)
 			go func() {
 				stopOllama(ollamaPID)
-				gotConnected := setupServices()
+				gotConnected := docker.SetupDocker()
 				if !gotConnected {
 					slog.Error("Failed to connect to Docker or start Ollama container")
 					guiApp.SendNotification(&fyne.Notification{
@@ -272,7 +277,7 @@ func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 							"Check logs for more information\n" +
 							"Ctrl+Revise will continue to run without Docker",
 					})
-					guiApp.Preferences().SetBool(useDockerKey, false)
+					guiApp.Preferences().SetBool(UseDockerKey, false)
 					// TODO restart ollama without docker
 				} else {
 					guiApp.SendNotification(&fyne.Notification{
@@ -289,43 +294,43 @@ func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 
 func selectCopyActionDropDown() *widget.Select {
 	combo := widget.NewSelect([]string{
-		CorrectGrammar.String(),
-		MakeItProfessional.String(),
-		MakeItFriendly.String(),
-		MakeHeadline.String(),
-		MakeASummary.String(),
-		MakeExpanded.String(),
-		MakeExplanation.String(),
-		MakeItAList.String()},
+		ollama.CorrectGrammar.String(),
+		ollama.MakeItProfessional.String(),
+		ollama.MakeItFriendly.String(),
+		ollama.MakeHeadline.String(),
+		ollama.MakeASummary.String(),
+		ollama.MakeExpanded.String(),
+		ollama.MakeExplanation.String(),
+		ollama.MakeItAList.String()},
 		func(value string) {
 			switch value {
-			case CorrectGrammar.String():
-				selectedPrompt = CorrectGrammar
-			case MakeItProfessional.String():
-				selectedPrompt = MakeItProfessional
-			case MakeItFriendly.String():
-				selectedPrompt = MakeItFriendly
-			case MakeHeadline.String():
-				selectedPrompt = MakeHeadline
-			case MakeASummary.String():
-				selectedPrompt = MakeASummary
-			case MakeExpanded.String():
-				selectedPrompt = MakeExpanded
-			case MakeExplanation.String():
-				selectedPrompt = MakeExplanation
-			case MakeItAList.String():
-				selectedPrompt = MakeItAList
+			case ollama.CorrectGrammar.String():
+				selectedPrompt = ollama.CorrectGrammar
+			case ollama.MakeItProfessional.String():
+				selectedPrompt = ollama.MakeItProfessional
+			case ollama.MakeItFriendly.String():
+				selectedPrompt = ollama.MakeItFriendly
+			case ollama.MakeHeadline.String():
+				selectedPrompt = ollama.MakeHeadline
+			case ollama.MakeASummary.String():
+				selectedPrompt = ollama.MakeASummary
+			case ollama.MakeExpanded.String():
+				selectedPrompt = ollama.MakeExpanded
+			case ollama.MakeExplanation.String():
+				selectedPrompt = ollama.MakeExplanation
+			case ollama.MakeItAList.String():
+				selectedPrompt = ollama.MakeItAList
 			default:
 				slog.Error("Invalid selection", "value", value)
-				selectedPrompt = CorrectGrammar
+				selectedPrompt = ollama.CorrectGrammar
 			}
-			guiApp.Preferences().SetString(currentPromptKey, selectedPrompt.String())
+			guiApp.Preferences().SetString(CurrentPromptKey, selectedPrompt.String())
 			err := selectedPromptBinding.Set(selectedPrompt.String())
 			if err != nil {
 				slog.Error("Failed to set selectedPromptBinding", "error", err)
 			}
 		})
-	prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+	prompt := guiApp.Preferences().StringWithFallback(CurrentPromptKey, ollama.CorrectGrammar.String())
 	combo.SetSelected(prompt)
 
 	return combo
@@ -333,30 +338,30 @@ func selectCopyActionDropDown() *widget.Select {
 
 func selectAIModelDropDown() *widget.Select {
 	var (
-		llama3          = "Llama3 - RAM Usage: " + memoryUsage[Llama3].String() + " (Default)"
-		codeLlama       = "CodeLlama - RAM Usage: " + memoryUsage[CodeLlama].String()
-		codeLlama13b    = "CodeLlama13b - RAM Usage: " + memoryUsage[CodeLlama13b].String()
-		codeGemma       = "CodeGemma - RAM Usage: " + memoryUsage[CodeGemma].String()
-		deepSeekCoder   = "DeepSeekCoder. - RAM Usage: " + memoryUsage[DeepSeekCoder].String()
-		deepSeekCoderV2 = "DeepSeekCoderV2 - RAM Usage: " + memoryUsage[DeepSeekCoderV2].String()
-		gemma           = "Gemma - RAM Usage: " + memoryUsage[Gemma].String()
-		gemma2b         = "Gemma2b - RAM Usage: " + memoryUsage[Gemma2b].String()
-		gemma2          = "Gemma2 - RAM Usage: " + memoryUsage[Gemma2].String()
-		mistral         = "Mistral - RAM Usage: " + memoryUsage[Mistral].String()
-		phi3            = "Phi3 - RAM Usage: " + memoryUsage[Phi3].String()
+		llama3          = "Llama3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String() + " (Default)"
+		codeLlama       = "CodeLlama - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama].String()
+		codeLlama13b    = "CodeLlama13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
+		codeGemma       = "CodeGemma - RAM Usage: " + ollama.MemoryUsage[ollama.CodeGemma].String()
+		deepSeekCoder   = "DeepSeekCoder. - RAM Usage: " + ollama.MemoryUsage[ollama.DeepSeekCoder].String()
+		deepSeekCoderV2 = "DeepSeekCoderV2 - RAM Usage: " + ollama.MemoryUsage[ollama.DeepSeekCoderV2].String()
+		gemma           = "Gemma - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma].String()
+		gemma2b         = "Gemma2b - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2b].String()
+		gemma2          = "Gemma2 - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2].String()
+		mistral         = "Mistral - RAM Usage: " + ollama.MemoryUsage[ollama.Mistral].String()
+		phi3            = "Phi3 - RAM Usage: " + ollama.MemoryUsage[ollama.Phi3].String()
 	)
-	var itemAndText = map[ModelName]string{
-		Llama3:          llama3,
-		CodeLlama:       codeLlama,
-		CodeLlama13b:    codeLlama13b,
-		CodeGemma:       codeGemma,
-		DeepSeekCoder:   deepSeekCoder,
-		DeepSeekCoderV2: deepSeekCoderV2,
-		Gemma:           gemma,
-		Gemma2b:         gemma2b,
-		Gemma2:          gemma2,
-		Mistral:         mistral,
-		Phi3:            phi3,
+	var itemAndText = map[ollama.ModelName]string{
+		ollama.Llama3:          llama3,
+		ollama.CodeLlama:       codeLlama,
+		ollama.CodeLlama13b:    codeLlama13b,
+		ollama.CodeGemma:       codeGemma,
+		ollama.DeepSeekCoder:   deepSeekCoder,
+		ollama.DeepSeekCoderV2: deepSeekCoderV2,
+		ollama.Gemma:           gemma,
+		ollama.Gemma2b:         gemma2b,
+		ollama.Gemma2:          gemma2,
+		ollama.Mistral:         mistral,
+		ollama.Phi3:            phi3,
 	}
 	combo := widget.NewSelect([]string{
 		llama3,
@@ -373,99 +378,124 @@ func selectAIModelDropDown() *widget.Select {
 		func(value string) {
 			switch value {
 			case llama3:
-				selectedModel = Llama3
+				selectedModel = ollama.Llama3
 			case codeLlama:
-				selectedModel = CodeLlama
+				selectedModel = ollama.CodeLlama
 			case codeLlama13b:
-				selectedModel = CodeLlama13b
+				selectedModel = ollama.CodeLlama13b
 			case codeGemma:
-				selectedModel = CodeGemma
+				selectedModel = ollama.CodeGemma
 			case deepSeekCoder:
-				selectedModel = DeepSeekCoder
+				selectedModel = ollama.DeepSeekCoder
 			case deepSeekCoderV2:
-				selectedModel = DeepSeekCoderV2
+				selectedModel = ollama.DeepSeekCoderV2
 			case gemma:
-				selectedModel = Gemma
+				selectedModel = ollama.Gemma
 			case gemma2b:
-				selectedModel = Gemma2b
+				selectedModel = ollama.Gemma2b
 			case gemma2:
-				selectedModel = Gemma2
+				selectedModel = ollama.Gemma2
 			case mistral:
-				selectedModel = Mistral
+				selectedModel = ollama.Mistral
 			case phi3:
-				selectedModel = Phi3
+				selectedModel = ollama.Phi3
 			default:
 				slog.Error("Invalid selection", "value", value)
-				selectedModel = Llama3
+				selectedModel = ollama.Llama3
 			}
-			guiApp.Preferences().SetInt(currentModelKey, int(selectedModel))
+			guiApp.Preferences().SetInt(CurrentModelKey, int(selectedModel))
 			err := selectedModelBinding.Set(int(selectedModel))
 			if err != nil {
 				slog.Error("Failed to set selectedModelBinding", "error", err)
 			}
 			slog.Debug("Selected model", "model", selectedModel)
 			if ollamaClient != nil {
-				_ = pullModel(selectedModel, false)
+				_ = PullModelWrapper(selectedModel, false)
 			}
 		})
-	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
-	selection := itemAndText[ModelName(model)]
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	selection := itemAndText[ollama.ModelName(model)]
 	slog.Debug("Selected model", "model", selection)
 	combo.SetSelected(selection)
 
 	return combo
 }
 
+func PullModelWrapper(model ollama.ModelName, update bool) error {
+	pulling := gui.LoadingScreenWithMessage(guiApp, "Downloading Model", "fetching model: "+model.String())
+	pulling.Show()
+	defer func() {
+		time.Sleep(500 * time.Millisecond)
+		pulling.Hide()
+	}()
+
+	progressFunc := func(resp api.ProgressResponse) error {
+		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
+		if resp.Total == resp.Completed {
+			slog.Info("Model pulled", "model", model, "resp", resp)
+		}
+		gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
+		return nil
+	}
+
+	err := ollama.PullModel(ollamaClient, model, progressFunc, update)
+	if err != nil {
+		slog.Error("Failed to pull model", "error", err)
+		return err
+	}
+	return nil
+}
+
 func selectTranslationFromDropDown() *widget.Select {
 	combo := widget.NewSelect([]string{
-		string(English),
-		string(Arabic),
-		string(Chinese),
-		string(French),
-		string(German),
-		string(Italian),
-		string(Japanese),
-		string(Portuguese),
-		string(Russian),
-		string(Spanish)},
+		string(ollama.English),
+		string(ollama.Arabic),
+		string(ollama.Chinese),
+		string(ollama.French),
+		string(ollama.German),
+		string(ollama.Italian),
+		string(ollama.Japanese),
+		string(ollama.Portuguese),
+		string(ollama.Russian),
+		string(ollama.Spanish)},
 		func(value string) {
-			guiApp.Preferences().SetString(currentFromLangKey, value)
+			guiApp.Preferences().SetString(CurrentFromLangKey, value)
 			err := translationFromBinding.Set(selectedModel.String())
 			if err != nil {
 				slog.Error("Failed to set translationFromBinding", "error", err)
 			}
 		})
-	language := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
+	language := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
 	combo.SetSelected(language)
 
 	return combo
 }
 func selectTranslationToDropDown() *widget.Select {
 	combo := widget.NewSelect([]string{
-		string(Spanish),
-		string(Arabic),
-		string(Chinese),
-		string(French),
-		string(German),
-		string(Italian),
-		string(Japanese),
-		string(Portuguese),
-		string(Russian),
-		string(English)},
+		string(ollama.Spanish),
+		string(ollama.Arabic),
+		string(ollama.Chinese),
+		string(ollama.French),
+		string(ollama.German),
+		string(ollama.Italian),
+		string(ollama.Japanese),
+		string(ollama.Portuguese),
+		string(ollama.Russian),
+		string(ollama.English)},
 		func(value string) {
-			guiApp.Preferences().SetString(currentToLangKey, value)
+			guiApp.Preferences().SetString(CurrentToLangKey, value)
 			err := translationToBinding.Set(selectedModel.String())
 			if err != nil {
 				slog.Error("Failed to set translationToBinding", "error", err)
 			}
 		})
-	language := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
+	language := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 	combo.SetSelected(language)
 
 	return combo
 }
 
-func updateDropDownMenus() {
+func UpdateDropDownMenus() {
 	aiActionDropdown.SetSelected(selectedPrompt.String())
 	aiModelDropdown.SetSelected(selectedModel.String())
 }
@@ -537,7 +567,7 @@ func showShortcuts(guiApp fyne.App) {
 	label5 := widget.NewLabel("Translate the highlighted text, From: " + from + " To: " + to)
 	value5 := widget.NewLabel("Alt + T")
 	value5.TextStyle = fyne.TextStyle{Bold: true}
-	speakAIResponse := guiApp.Preferences().BoolWithFallback(speakAIResponseKey, false)
+	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakAIResponse {
 		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3, label4, value4, label5, value5)
 	} else {
@@ -572,10 +602,10 @@ func askQuestion(guiApp fyne.App) {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		loadingScreen := loadingScreenWithMessage(thinkingMsg,
+		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 			"Asking question with model: "+selectedModel.String()+"...")
 		loadingScreen.Show()
-		response, err := askAI(ollamaClient, selectedModel, s)
+		response, err := ollama.AskAI(ollamaClient, selectedModel, s)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 			loadingScreen.Hide()
@@ -602,10 +632,10 @@ func askQuestion(guiApp fyne.App) {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		loadingScreen := loadingScreenWithMessage(thinkingMsg,
+		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 			"Asking question with model: "+selectedModel.String()+"...")
 		loadingScreen.Show()
-		response, err := askAI(ollamaClient, selectedModel, text.Text)
+		response, err := ollama.AskAI(ollamaClient, selectedModel, text.Text)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
 			loadingScreen.Hide()
@@ -629,8 +659,8 @@ func askQuestion(guiApp fyne.App) {
 	question.Show()
 }
 
-func changedPromptNotification() {
-	guiApp.Preferences().SetString(currentPromptKey, selectedPrompt.String())
+func ChangedPromptNotification() {
+	guiApp.Preferences().SetString(CurrentPromptKey, selectedPrompt.String())
 	guiApp.SendNotification(&fyne.Notification{
 		Title:   "AI Action Changed",
 		Content: "AI Action has been changed to:\n" + selectedPrompt.String(),
@@ -639,54 +669,31 @@ func changedPromptNotification() {
 
 func setBindingVariables() error {
 	selectedModelBinding = binding.NewInt()
-	model := guiApp.Preferences().IntWithFallback(currentModelKey, int(Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
 	err := selectedModelBinding.Set(model)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
 	translationFromBinding = binding.NewString()
-	from := guiApp.Preferences().StringWithFallback(currentFromLangKey, string(English))
+	from := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
 	err = translationFromBinding.Set(from)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
 	translationToBinding = binding.NewString()
-	to := guiApp.Preferences().StringWithFallback(currentToLangKey, string(Spanish))
+	to := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 	err = translationToBinding.Set(to)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
 	selectedPromptBinding = binding.NewString()
-	prompt := guiApp.Preferences().StringWithFallback(currentPromptKey, CorrectGrammar.String())
+	prompt := guiApp.Preferences().StringWithFallback(CurrentPromptKey, ollama.CorrectGrammar.String())
 	err = selectedPromptBinding.Set(prompt)
 	if err != nil {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 	}
 	return err
-}
-
-func showNotification(title, content string) {
-	guiApp.SendNotification(&fyne.Notification{
-		Title:   title,
-		Content: content,
-	})
-}
-
-func startupScreen() fyne.Window {
-	startupWindow := guiApp.NewWindow("Starting Control+Revise")
-	infinite := widget.NewProgressBarInfinite()
-	text := widget.NewLabel("Starting AI services in the background")
-	startupWindow.SetContent(container.NewVBox(text, infinite))
-	return startupWindow
-}
-
-func loadingScreenWithMessage(title, msg string) fyne.Window {
-	loadingScreen := guiApp.NewWindow(title)
-	infinite := widget.NewProgressBarInfinite()
-	text := widget.NewLabel(msg)
-	loadingScreen.SetContent(container.NewVBox(text, infinite))
-	return loadingScreen
 }

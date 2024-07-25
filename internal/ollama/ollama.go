@@ -1,12 +1,10 @@
-package main
+package ollama
 
 import (
 	"context"
-	"log/slog"
-	"time"
-
 	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/ollama/ollama/api"
+	"log/slog"
 )
 
 //go:generate stringer -linecomment -type=ModelName
@@ -27,8 +25,8 @@ const (
 	Phi3                             // phi3:latest
 )
 
-// Memory usage in MB
-var memoryUsage = map[ModelName]bytesize.ByteSize{
+// MemoryUsage Memory usage in MB
+var MemoryUsage = map[ModelName]bytesize.ByteSize{
 	CodeLlama:       5077 * bytesize.MB,
 	CodeLlama13b:    9055 * bytesize.MB,
 	CodeGemma:       6489 * bytesize.MB,
@@ -72,12 +70,12 @@ const (
 	MakeHeadline       // Make a Headline
 )
 
-type promptText struct {
+type PromptText struct {
 	prompt      string
 	promptExtra string
 }
 
-var promptToText = map[PromptMsg]promptText{
+var PromptToText = map[PromptMsg]PromptText{
 	CorrectGrammar: {
 		prompt:      "IDENTITY and PURPOSE\nYou are a writing expert. You refine the input text to enhance clarity, coherence, grammar, and style.\n\nSteps\nAnalyze the input text for grammatical errors, stylistic inconsistencies, clarity issues, and coherence.\nApply corrections and improvements directly to the text.\nMaintain the original meaning and intent of the user's text, ensuring that the improvements are made within the context of the input language's grammatical norms and stylistic conventions.\nOUTPUT INSTRUCTIONS\nRefined and improved text that has no grammar mistakes.\nReturn in the same language as the input.\nInclude NO additional commentary or explanation in the response.\nINPUT:", //nolint:lll long line
 		promptExtra: " Return the corrected text without explaining what changed or telling me \"Here is the revised text\", just provide the corrected text and output just the result"},
@@ -107,29 +105,29 @@ var promptToText = map[PromptMsg]promptText{
 			"Please do not provide any commentary or explanation, just expand on the text."},
 }
 
-func (prompt PromptMsg) promptToText() string {
-	text, ok := promptToText[prompt]
+func (prompt PromptMsg) PromptToText() string {
+	text, ok := PromptToText[prompt]
 	if !ok {
 		slog.Error("Unknown prompt", "prompt", prompt)
-		return promptToText[CorrectGrammar].prompt
+		return PromptToText[CorrectGrammar].prompt
 	}
 	return text.prompt
 }
 
-func (prompt PromptMsg) promptExtraToText() string {
-	text, ok := promptToText[prompt]
+func (prompt PromptMsg) PromptExtraToText() string {
+	text, ok := PromptToText[prompt]
 	if !ok {
 		slog.Error("Unknown prompt", "prompt", prompt)
-		return promptToText[CorrectGrammar].promptExtra
+		return PromptToText[CorrectGrammar].promptExtra
 	}
 	return text.promptExtra
 }
 
-func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model:  model.String(),
-		Prompt: prompt.promptToText() + " [ " + inputForPrompt + " ] " + prompt.promptExtraToText(),
+		Prompt: prompt.PromptToText() + " [ " + inputForPrompt + " ] " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
 	}
@@ -152,7 +150,7 @@ func askAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, i
 	return response, nil
 }
 
-func askAI(client *api.Client, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAI(client *api.Client, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model: model.String(),
@@ -183,7 +181,7 @@ func askAI(client *api.Client, model ModelName, inputForPrompt string) (api.Gene
 	return response, nil
 }
 
-func askAIToTranslate(client *api.Client, model ModelName, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
+func AskAIToTranslate(client *api.Client, model ModelName, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model: model.String(),
@@ -215,20 +213,14 @@ func askAIToTranslate(client *api.Client, model ModelName, inputForPrompt string
 	return response, nil
 }
 
-func pullModel(model ModelName, update bool) error {
+func PullModel(client *api.Client, model ModelName, pf api.PullProgressFunc, update bool) error {
 	ctx := context.Background()
 	req := &api.PullRequest{
 		Model: model.String(),
 	}
-	pulling := loadingScreenWithMessage("Downloading Model", "fetching model: "+model.String())
-	pulling.Show()
-	defer func() {
-		time.Sleep(500 * time.Millisecond)
-		pulling.Hide()
-	}()
 
 	slog.Debug("Pulling model", "model", model.String())
-	found, err := findModel(ctx, model)
+	found, err := FindModel(ctx, client, model.String())
 	if err != nil {
 		return err
 	}
@@ -236,37 +228,11 @@ func pullModel(model ModelName, update bool) error {
 		slog.Info("AI model loaded", "model", model)
 		return nil
 	}
-
-	progressFunc := func(resp api.ProgressResponse) error {
-		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
-		if resp.Total == resp.Completed {
-			slog.Info("Model pulled", "model", model, "resp", resp)
-		}
-		return nil
-	}
-
-	err = ollamaClient.Pull(ctx, req, progressFunc)
+	err = client.Pull(ctx, req, pf)
 	if err != nil {
 		slog.Error("Failed to pull model", "error", err)
 		return err
 	}
-	showNotification("Model Download Completed", "Model "+model.String()+" has been pulled")
-	return nil
-}
 
-func findModel(ctx context.Context, model ModelName) (bool, error) {
-	response, err := ollamaClient.List(ctx)
-	if err != nil {
-		slog.Error("Failed to pull model", "error", err)
-		return false, err
-	}
-	for m := range response.Models {
-		slog.Debug("Docker Image", "Name", response.Models[m], "Model", response.Models[m].Model,
-			"ParameterSize", response.Models[m].Details.ParameterSize, "Families", response.Models[m].Details.Families)
-		if response.Models[m].Name == model.String() {
-			slog.Debug("Model found", "model", response.Models[m].Model)
-			return true, nil
-		}
-	}
-	return false, nil
+	return nil
 }
