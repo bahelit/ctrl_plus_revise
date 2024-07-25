@@ -338,6 +338,7 @@ func selectCopyActionDropDown() *widget.Select {
 
 func selectAIModelDropDown() *widget.Select {
 	var (
+		llama3Dot1      = "Llama3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
 		llama3          = "Llama3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String() + " (Default)"
 		codeLlama       = "CodeLlama - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama].String()
 		codeLlama13b    = "CodeLlama13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
@@ -351,6 +352,7 @@ func selectAIModelDropDown() *widget.Select {
 		phi3            = "Phi3 - RAM Usage: " + ollama.MemoryUsage[ollama.Phi3].String()
 	)
 	var itemAndText = map[ollama.ModelName]string{
+		ollama.Llama3Dot1:      llama3Dot1,
 		ollama.Llama3:          llama3,
 		ollama.CodeLlama:       codeLlama,
 		ollama.CodeLlama13b:    codeLlama13b,
@@ -364,6 +366,7 @@ func selectAIModelDropDown() *widget.Select {
 		ollama.Phi3:            phi3,
 	}
 	combo := widget.NewSelect([]string{
+		llama3Dot1,
 		llama3,
 		codeLlama,
 		codeLlama13b,
@@ -377,6 +380,8 @@ func selectAIModelDropDown() *widget.Select {
 		phi3},
 		func(value string) {
 			switch value {
+			case llama3Dot1:
+				selectedModel = ollama.Llama3Dot1
 			case llama3:
 				selectedModel = ollama.Llama3
 			case codeLlama:

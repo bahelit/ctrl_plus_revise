@@ -2,16 +2,17 @@ package ollama
 
 import (
 	"context"
+	"log/slog"
+
 	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/ollama/ollama/api"
-	"log/slog"
 )
 
 //go:generate stringer -linecomment -type=ModelName
 type ModelName int
 
 const (
-	Llama3          ModelName = iota // llama3:latest
+	Llama3Dot1      ModelName = iota // llama3.1:latest
 	CodeLlama                        // codellama:latest
 	CodeLlama13b                     // codellama:13b
 	CodeGemma                        // codegemma:7b
@@ -20,6 +21,7 @@ const (
 	Gemma                            // gemma:latest
 	Gemma2b                          // gemma:2b
 	Gemma2                           // gemma2:latest
+	Llama3                           // llama3:latest
 	Llava                            // llava:latest
 	Mistral                          // mistral:latest
 	Phi3                             // phi3:latest
@@ -36,6 +38,7 @@ var MemoryUsage = map[ModelName]bytesize.ByteSize{
 	Gemma2b:         2321 * bytesize.MB,
 	Gemma2:          6683 * bytesize.MB,
 	Llama3:          4980 * bytesize.MB,
+	Llama3Dot1:      6354 * bytesize.MB,
 	Mistral:         4615 * bytesize.MB,
 	Phi3:            3269 * bytesize.MB,
 }
