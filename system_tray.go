@@ -123,7 +123,7 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 		aiModelDropdown,
 		chooseLanguageLabel,
 		langDivider)
-	sysTray.SetContent(container.NewVBox(mainWindow, dropDownMenu))
+	sysTray.SetContent(container.NewBorder(mainWindow, dropDownMenu, nil, nil))
 
 	sysTray.SetCloseIntercept(func() {
 		sysTray.Hide()
