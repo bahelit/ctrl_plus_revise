@@ -24,10 +24,10 @@ var (
 	ollamaClient           *ollamaApi.Client
 	selectedModel          = ollama.Llama3
 	selectedPrompt         = ollama.CorrectGrammar
-	selectedModelBinding   binding.Int
-	translationToBinding   binding.String
-	translationFromBinding binding.String
-	selectedPromptBinding  binding.String
+	selectedModelBinding   = binding.NewInt()
+	translationFromBinding = binding.NewString()
+	translationToBinding   = binding.NewString()
+	selectedPromptBinding  = binding.NewString()
 	guiApp                 fyne.App
 	ollamaPID              int
 	stopOllamaOnShutDown   = false

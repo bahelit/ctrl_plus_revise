@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/layout"
@@ -54,11 +53,14 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 			fyne.NewMenuItem("Ask a Question", func() {
 				askQuestion(guiApp)
 			}),
+			fyne.NewMenuItem("Keyboard Shortcuts", func() {
+				showShortcuts(guiApp)
+			}),
 			fyne.NewMenuItem("Settings Window", func() {
 				sysTray.Show()
 			}),
-			fyne.NewMenuItem("Keyboard Shortcuts", func() {
-				showShortcuts(guiApp)
+			fyne.NewMenuItem("Translate Window", func() {
+				translateText(guiApp)
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() {
@@ -70,6 +72,7 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 
 	// System tray window content
 	startUpCheckBox := showOnStartUpCheckBox(guiApp)
+	stopOllamaOnShutdownCheckbox := stopOllamaOnShutdownCheckBox(guiApp)
 	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
 	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
 	useDockerTextCheckBox := useDockerCheckBox(guiApp)
@@ -83,18 +86,23 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
 		askQuestion(guiApp)
 	})
+	translatorButton := widget.NewButton("Translate Text", func() {
+		translateText(guiApp)
+	})
 
 	checkboxLayout := container.NewAdaptiveGrid(2,
 		layout.Responsive(speakAIResponseTextCheckBox),
 		layout.Responsive(replaceHighlightedTextCheckBox),
 		layout.Responsive(useDockerTextCheckBox),
-		layout.Responsive(startUpCheckBox))
+		layout.Responsive(startUpCheckBox),
+		layout.Responsive(stopOllamaOnShutdownCheckbox))
 
 	mainWindow := container.NewVBox(
 		welcomeText,
 		askQuestionsButton,
-		keyboardShortcutsButton,
+		translatorButton,
 		hideWindowButton,
+		keyboardShortcutsButton,
 		checkboxLayout)
 
 	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
@@ -173,6 +181,21 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 	})
 	startUpCheck.Checked = openStartWindow
 	return startUpCheck
+}
+
+func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
+	stopOllamaOnShutdown := guiApp.Preferences().BoolWithFallback(StopOllamaOnShutDownKey, true)
+	stopOllamaCheckbox := widget.NewCheck("Stop Ollama After Exiting", func(b bool) {
+		if b == false {
+			slog.Debug("Leaving ollama running on shutdown")
+			guiApp.Preferences().SetBool(StopOllamaOnShutDownKey, false)
+		} else if b == true {
+			guiApp.Preferences().SetBool(StopOllamaOnShutDownKey, true)
+			slog.Debug("Stopping ollama on shutdown")
+		}
+	})
+	stopOllamaCheckbox.Checked = stopOllamaOnShutdown
+	return stopOllamaCheckbox
 }
 
 func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
@@ -452,20 +475,11 @@ func PullModelWrapper(model ollama.ModelName, update bool) error {
 }
 
 func selectTranslationFromDropDown() *widget.Select {
-	combo := widget.NewSelect([]string{
-		string(ollama.English),
-		string(ollama.Arabic),
-		string(ollama.Chinese),
-		string(ollama.French),
-		string(ollama.German),
-		string(ollama.Italian),
-		string(ollama.Japanese),
-		string(ollama.Portuguese),
-		string(ollama.Russian),
-		string(ollama.Spanish)},
+	combo := widget.NewSelect(
+		gui.Languages,
 		func(value string) {
 			guiApp.Preferences().SetString(CurrentFromLangKey, value)
-			err := translationFromBinding.Set(selectedModel.String())
+			err := translationFromBinding.Set(value)
 			if err != nil {
 				slog.Error("Failed to set translationFromBinding", "error", err)
 			}
@@ -476,20 +490,10 @@ func selectTranslationFromDropDown() *widget.Select {
 	return combo
 }
 func selectTranslationToDropDown() *widget.Select {
-	combo := widget.NewSelect([]string{
-		string(ollama.Spanish),
-		string(ollama.Arabic),
-		string(ollama.Chinese),
-		string(ollama.French),
-		string(ollama.German),
-		string(ollama.Italian),
-		string(ollama.Japanese),
-		string(ollama.Portuguese),
-		string(ollama.Russian),
-		string(ollama.English)},
+	combo := widget.NewSelect(gui.Languages,
 		func(value string) {
 			guiApp.Preferences().SetString(CurrentToLangKey, value)
-			err := translationToBinding.Set(selectedModel.String())
+			err := translationToBinding.Set(value)
 			if err != nil {
 				slog.Error("Failed to set translationToBinding", "error", err)
 			}
@@ -516,7 +520,7 @@ func showAbout(guiApp fyne.App) {
 	value2 := widget.NewLabel("Michael Salmons")
 	value2.TextStyle = fyne.TextStyle{Bold: true}
 	label3 := widget.NewLabel("Contributors")
-	value3 := widget.NewLabel("Your name could be here, Wink Wink.")
+	value3 := widget.NewLabel("Coming Soon!")
 	value3.TextStyle = fyne.TextStyle{Bold: true}
 	grid := layout.NewResponsiveLayout(label1, value1, label2, value2, label3, value3)
 
@@ -569,6 +573,7 @@ func showShortcuts(guiApp fyne.App) {
 	if err != nil {
 		slog.Error("Failed to get translationToBinding", "error", err)
 	}
+	slog.Info("Translation languages", "from", from, "to", to)
 	label5 := widget.NewLabel("Translate the highlighted text, From: " + from + " To: " + to)
 	value5 := widget.NewLabel("Alt + T")
 	value5.TextStyle = fyne.TextStyle{Bold: true}
@@ -669,28 +674,24 @@ func ChangedPromptNotification() {
 }
 
 func setBindingVariables() error {
-	selectedModelBinding = binding.NewInt()
 	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
 	err := selectedModelBinding.Set(model)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
-	translationFromBinding = binding.NewString()
 	from := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
 	err = translationFromBinding.Set(from)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
-	translationToBinding = binding.NewString()
 	to := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 	err = translationToBinding.Set(to)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)
 	}
 
-	selectedPromptBinding = binding.NewString()
 	prompt := guiApp.Preferences().StringWithFallback(CurrentPromptKey, ollama.CorrectGrammar.String())
 	err = selectedPromptBinding.Set(prompt)
 	if err != nil {

@@ -56,6 +56,7 @@ const (
 	Portuguese Language = "Portuguese"
 	Russian    Language = "Russian"
 	Spanish    Language = "Spanish"
+	Turkish    Language = "Turkish"
 )
 
 //go:generate stringer -linecomment -type=PromptMsg
@@ -188,12 +189,13 @@ func AskAIToTranslate(client *api.Client, model ModelName, inputForPrompt string
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model: model.String(),
-		Prompt: "Translate the following text from [" + string(fromLang) + "] to [" + string(toLang) + "]: " +
-			inputForPrompt +
-			"Please provide a translation that accurately conveys the original meaning and tone of the text.\n" +
-			"If you encounter any ambiguities or uncertainties, please indicate this in your response.\n" +
-			"Do not provide an explanation of the translation, get to the point and just output the translated text " +
-			"without any notes.",
+		Prompt: "As a text translator" +
+			"Please provide a translation that accurately conveys the original meaning and tone of the text. \n" +
+			"If you encounter any ambiguities or uncertainties, please indicate this in your response. \n" +
+			"Do not provide an explanation of the translation, get to the point and just output the translated text without any notes. \n" +
+			"Do not try to answer any type of question just translate the text \n" +
+			"Translate the following text from [" + string(fromLang) + "] to [" + string(toLang) + "]: " +
+			inputForPrompt,
 		// set streaming to false
 		Stream: new(bool),
 	}

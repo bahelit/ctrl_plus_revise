@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ollama/ollama/api"
 )
@@ -31,23 +32,23 @@ func questionPopUp(a fyne.App, question string, generated *api.GenerateResponse)
 	generatedText1 := widget.NewRichTextFromMarkdown(generated.Response)
 
 	vbox := container.NewVScroll(generatedText1)
-	vbox.SetMinSize(fyne.NewSize(630, 300))
+	vbox.SetMinSize(fyne.NewSize(640, 300))
 
 	buttons := container.NewPadded(container.NewVBox(
-		widget.NewButton("Copy generated text to Clipboard", func() {
+		widget.NewButtonWithIcon("Copy generated text to Clipboard", theme.ContentCopyIcon(), func() {
 			w.Clipboard().SetContent(generated.Response)
 			w.Close()
 		})))
 
 	grid := container.New(layout.NewAdaptiveGridLayout(1), vbox)
 
-	w.SetContent(container.NewVBox(
-		hello,
-		questionText,
-		questionText1,
-		generatedText,
-		grid,
+	questionSection := container.NewVBox(hello, questionText, questionText1, generatedText)
+	w.SetContent(container.NewBorder(
+		questionSection,
 		buttons,
+		nil,
+		nil,
+		container.NewVScroll(grid),
 	))
 	w.Show()
 }

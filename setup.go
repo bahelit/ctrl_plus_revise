@@ -47,13 +47,11 @@ func handleShutdown(p int) {
 	if stopOllamaOnShutDown {
 		if useDocker {
 			docker.StopOllamaContainer()
-		} else {
-			if p != 0 {
-				stopOllama(p)
-			}
+		} else if p != 0 {
+			stopOllama(p)
 		}
 	} else {
-		slog.Info("Leaving Ollama container running")
+		slog.Info("Leaving Ollama running")
 	}
 }
 

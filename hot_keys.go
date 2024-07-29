@@ -2,21 +2,21 @@ package main
 
 import (
 	"crypto/sha256"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui"
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
-	dirsize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
-	htgotts "github.com/hegedustibor/htgo-tts"
-	"github.com/hegedustibor/htgo-tts/handlers"
-	"github.com/hegedustibor/htgo-tts/voices"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/go-vgo/robotgo"
+	htgotts "github.com/hegedustibor/htgo-tts"
+	"github.com/hegedustibor/htgo-tts/handlers"
+	"github.com/hegedustibor/htgo-tts/voices"
 	hook "github.com/robotn/gohook"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/bahelit/ctrl_plus_revise/pkg/clipboard"
+	dirsize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
 	"github.com/bahelit/ctrl_plus_revise/pkg/throttle"
 )
 
@@ -97,11 +97,6 @@ func RegisterHotkeys() {
 	s := hook.Start()
 	defer hook.End()
 	<-hook.Process(s)
-
-	// Debug code
-	/*for ev := range s {
-		slog.Info("Event caught", "event", ev)
-	}*/
 }
 
 func initSpeech() {
