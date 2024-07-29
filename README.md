@@ -153,7 +153,8 @@ make stringer
 * [X] Pull model after changing selection
 * [ ] Windows, prevent console window from opening
 * [ ] Improve UI
-* [ ] Improve UI - show the model download progress
+* [X] Improve UI - fix window resizing issues in Ask A Question window
+* [X] Improve UI - show the model download progress
 * [ ] Improve Docker support
 * [ ] Improve model management
 * [X] Add more AI models

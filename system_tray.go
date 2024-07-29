@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"log/slog"
 	"os"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/ollama/ollama/api"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
@@ -585,7 +585,7 @@ func showShortcuts(guiApp fyne.App) {
 func askQuestion(guiApp fyne.App) {
 	slog.Debug("Asking Question")
 	var (
-		screenHeight float32 = 188.0
+		screenHeight float32 = 200.0
 		screenWidth  float32 = 480.0
 	)
 	question := guiApp.NewWindow("Ctrl+Revise Questions")
@@ -653,13 +653,9 @@ func askQuestion(guiApp fyne.App) {
 
 	topText := container.NewHBox(label1, label2)
 	questionLayout := layout.NewResponsiveLayout(
-		layout.Responsive(topText), // all sizes to 100%
-		layout.Responsive(text))
+		layout.Responsive(topText))
 	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
-	questionWindow := container.NewVSplit(
-		questionLayout,
-		buttonLayout,
-	)
+	questionWindow := container.NewBorder(questionLayout, buttonLayout, nil, nil, text)
 	question.SetContent(container.NewVScroll(questionWindow))
 	question.Show()
 }
