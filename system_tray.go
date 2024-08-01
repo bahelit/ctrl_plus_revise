@@ -425,6 +425,8 @@ func selectAIModelDropDown() *widget.Select {
 				selectedModel = ollama.Gemma2b
 			case gemma2:
 				selectedModel = ollama.Gemma2
+			case gemma22B:
+				selectedModel = ollama.Gemma22B
 			case mistral:
 				selectedModel = ollama.Mistral
 			case phi3:
@@ -491,6 +493,7 @@ func selectTranslationFromDropDown() *widget.Select {
 
 	return combo
 }
+
 func selectTranslationToDropDown() *widget.Select {
 	combo := widget.NewSelect(gui.Languages,
 		func(value string) {
