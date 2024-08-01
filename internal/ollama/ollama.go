@@ -21,6 +21,7 @@ const (
 	Gemma                            // gemma:latest
 	Gemma2b                          // gemma:2b
 	Gemma2                           // gemma2:latest
+	Gemma22B                         // gemma2:2b
 	Llama3                           // llama3:latest
 	Llava                            // llava:latest
 	Mistral                          // mistral:latest
@@ -37,6 +38,7 @@ var MemoryUsage = map[ModelName]bytesize.ByteSize{
 	Gemma:           6490 * bytesize.MB,
 	Gemma2b:         2321 * bytesize.MB,
 	Gemma2:          6683 * bytesize.MB,
+	Gemma22B:        2321 * bytesize.MB,
 	Llama3:          4980 * bytesize.MB,
 	Llama3Dot1:      6354 * bytesize.MB,
 	Mistral:         4615 * bytesize.MB,

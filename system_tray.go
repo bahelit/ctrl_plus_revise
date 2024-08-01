@@ -361,16 +361,17 @@ func selectCopyActionDropDown() *widget.Select {
 
 func selectAIModelDropDown() *widget.Select {
 	var (
-		llama3Dot1      = "Llama3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
-		llama3          = "Llama3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String() + " (Default)"
+		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
+		llama3          = "Llama 3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String() + " (Default)"
 		codeLlama       = "CodeLlama - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama].String()
-		codeLlama13b    = "CodeLlama13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
+		codeLlama13b    = "CodeLlama 13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
 		codeGemma       = "CodeGemma - RAM Usage: " + ollama.MemoryUsage[ollama.CodeGemma].String()
 		deepSeekCoder   = "DeepSeekCoder. - RAM Usage: " + ollama.MemoryUsage[ollama.DeepSeekCoder].String()
 		deepSeekCoderV2 = "DeepSeekCoderV2 - RAM Usage: " + ollama.MemoryUsage[ollama.DeepSeekCoderV2].String()
 		gemma           = "Gemma - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma].String()
-		gemma2b         = "Gemma2b - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2b].String()
+		gemma2b         = "Gemma 2b - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2b].String()
 		gemma2          = "Gemma2 - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2].String()
+		gemma22B        = "Gemma2 2B - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma22B].String()
 		mistral         = "Mistral - RAM Usage: " + ollama.MemoryUsage[ollama.Mistral].String()
 		phi3            = "Phi3 - RAM Usage: " + ollama.MemoryUsage[ollama.Phi3].String()
 	)
@@ -385,6 +386,7 @@ func selectAIModelDropDown() *widget.Select {
 		ollama.Gemma:           gemma,
 		ollama.Gemma2b:         gemma2b,
 		ollama.Gemma2:          gemma2,
+		ollama.Gemma22B:        gemma22B,
 		ollama.Mistral:         mistral,
 		ollama.Phi3:            phi3,
 	}
