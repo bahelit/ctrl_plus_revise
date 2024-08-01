@@ -175,3 +175,4 @@ Contributions are welcome and will be fully credited.
 * [ ] File and directory organizer (organize files and directories based on content)
 * [ ] Right-click and hold brings up rotary menu for quick access to features (or keyboard shortcuts)
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
+* [ ] RAG (Retrieval-Augmented Generation) model support
