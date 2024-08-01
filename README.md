@@ -162,6 +162,7 @@ Contributions are welcome and will be fully credited.
 * [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
 * [ ] Docker - pull based on GPU type
+* [ ] Bring back pop-up dialog on keyboard shortcut as an option
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
 * [ ] UI Improvement - show the model download progress percentage
