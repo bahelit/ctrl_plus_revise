@@ -13,10 +13,9 @@
 * [Getting Started](#getting-started)
 * [Developing Ctrl+Revise](#developing)
 
-
 # Ctrl+Revise
 
-Ctrl+Revise is an AI tool uses keyboard shortcuts that when pressed, that has an AI agent act on the text that is currently selected (highlighted) and the response replaces the highlighted text if writable and is added to the clipboard to be pasted elsewhere.
+Ctrl+Revise is an AI tool uses keyboard shortcuts that when pressed has an AI agent act on the text that is currently selected (highlighted) and the response replaces the highlighted text if writable and is added to the clipboard to be pasted elsewhere.
 
 The AI models run locally on your machine, ensuring your privacy and data security.
 
@@ -151,25 +150,27 @@ make stringer
 |:---------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------:|
 | ![Main Menu](images/Screenshot_Main_Menu.png) | ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png) | ![Translate Text](images/Screenshot_Translate_Tool.png) |
 
-## About
+## Contributing
 
-[**Ctrl+Revise**](https://ctrlplusrevise.com) is in early development and there are many features that are planned to be added. This project is open-source and you can contribute to it by submitting a pull request.
+[**Ctrl+Revise**](https://ctrlplusrevise.com) is in active development and there are many features that are planned to be added.
+
+Contributions are welcome and will be fully credited.
 
 ## TODO
-* [ ] Add support for Flatpak under Wayland (clipboard not working)
-* [ ] Create Snap package
+* [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
+* [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
 * [ ] Docker - pull based on GPU type
-* [ ] Detect and release running models from memory when switching between models
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
-* [X] UI Improvement - show the model download progress
-* [ ] Improve Docker support
-* [ ] Improve model management
-* [X] Add more AI models
-* [ ] Image support (detect what is in the image)
-* [ ] Image OCR support (read text out of an image)
+* [ ] UI Improvement - show the model download progress percentage
+* [ ] Improve Docker support - Check for new versions of Ollama and update
+* [ ] Improve model management - Ability to remove models
+* [ ] Image support (detect what is in the image using Llava or similar models)
+* [ ] Image OCR support (read text out of an image using Llava or similar models)
+* [ ] Localized language support ([go-i18n](https://github.com/nicksnyder/go-i18n))
+* [ ] Local text to speech (considering [eSpeak](https://github.com/espeak-ng/espeak-ng) already in most Linux distros or [Coqui-AI TTS](https://github.com/coqui-ai/TTS))
 * [ ] File and directory organizer (organize files and directories based on content)
 * [ ] Right-click and hold brings up rotary menu for quick access to features (or keyboard shortcuts)
-* [ ] Add chatbot feature
+* [ ] Chatbot and chat history (chat with an AI and save the chat history)
