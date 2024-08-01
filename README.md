@@ -7,7 +7,7 @@
   </p>
 </div>
 
-  ![last commit](https://badgen.net/github/last-commit/bahelit/ctrl_plus_revise) ![license](https://badgen.net/github/license/bahelit/ctrl_plus_revise)
+  ![license](https://badgen.net/github/license/bahelit/ctrl_plus_revise)
 
 * [Project overview](#project-overview)
 * [Getting Started](#getting-started)
