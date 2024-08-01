@@ -158,7 +158,7 @@ func AskAI(client *api.Client, model ModelName, inputForPrompt string) (api.Gene
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model: model.String(),
-		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll long line
+		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll: AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
 			"Don't explain you understand the input, just output the result.",

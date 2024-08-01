@@ -174,22 +174,8 @@ func handleUserShortcutKeyPressed() {
 	}
 	defer th.Done(err)
 
-	err = copyCommand()
-	if err != nil {
-		return
-	}
-
-	clippy, err := clipboard.ReadAll()
-	if err != nil {
-		slog.Error("Failed to read clipboard", "error", err)
-		return
-	}
-	if clippy == "" {
-		slog.Info("Clipboard is empty, skipping")
-		return
-	}
-	if sha256.Sum256([]byte(clippy)) == lastClipboardContent {
-		slog.Info("Clipboard content is the same as last, skipping")
+	clippy, copiedText := copyTextToClipboard()
+	if !copiedText {
 		return
 	}
 
@@ -246,20 +232,8 @@ func handleAskKeyPressed() {
 	}
 	defer th.Done(err)
 
-	err = copyCommand()
-	if err != nil {
-		_ = speech.Speak("Failed to copy text")
-		return
-	}
-
-	clippy, err := clipboard.ReadAll()
-	if err != nil {
-		slog.Error("Failed to read clipboard", "error", err)
-		return
-	}
-
-	if sha256.Sum256([]byte(clippy)) == lastClipboardContent {
-		slog.Debug("Clipboard content is the same as last time", "clippy", clippy)
+	clippy, copiedText := copyTextToClipboard()
+	if !copiedText {
 		return
 	}
 
@@ -316,20 +290,8 @@ func handleTranslatePressed() {
 		th.Done(err)
 	}()
 
-	err = copyCommand()
-	if err != nil {
-		_ = speech.Speak("Failed to copy text")
-		return
-	}
-
-	clippy, err := clipboard.ReadAll()
-	if err != nil {
-		slog.Error("Failed to read clipboard", "error", err)
-		return
-	}
-
-	if sha256.Sum256([]byte(clippy)) == lastClipboardContent {
-		slog.Info("Clipboard content is the same as last time", "clippy", clippy)
+	clippy, copiedText := copyTextToClipboard()
+	if !copiedText {
 		return
 	}
 
@@ -408,4 +370,27 @@ func pasteCommand() error {
 	}
 	robotgo.MilliSleep(keyPressSleep)
 	return nil
+}
+
+func copyTextToClipboard() (string, bool) {
+	err := copyCommand()
+	if err != nil {
+		return "", false
+	}
+
+	clippy, err := clipboard.ReadAll()
+	if err != nil {
+		slog.Error("Failed to read clipboard", "error", err)
+		return "", false
+	}
+	if clippy == "" {
+		slog.Info("Clipboard is empty, skipping")
+		return "", false
+	}
+
+	if sha256.Sum256([]byte(clippy)) == lastClipboardContent {
+		slog.Debug("Clipboard content is the same as last time", "clippy", clippy)
+		return "", false
+	}
+	return clippy, true
 }

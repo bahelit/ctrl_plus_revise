@@ -157,12 +157,14 @@ make stringer
 Contributions are welcome and will be fully credited.
 
 ## TODO
+* [ ] Custom keyboard shortcuts
+* [ ] Bring back pop-up dialog on keyboard shortcut as an option
+* [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
 * [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
 * [ ] Docker - pull based on GPU type
-* [ ] Bring back pop-up dialog on keyboard shortcut as an option
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
 * [ ] UI Improvement - show the model download progress percentage
@@ -171,8 +173,7 @@ Contributions are welcome and will be fully credited.
 * [ ] Image support (detect what is in the image using Llava or similar models)
 * [ ] Image OCR support (read text out of an image using Llava or similar models)
 * [ ] Localized language support ([go-i18n](https://github.com/nicksnyder/go-i18n))
-* [ ] Local text to speech (considering [eSpeak](https://github.com/espeak-ng/espeak-ng) already in most Linux distros or [Coqui-AI TTS](https://github.com/coqui-ai/TTS))
+* [ ] On device text to speech (considering [eSpeak](https://github.com/espeak-ng/espeak-ng) already in most Linux distros or [Coqui-AI TTS](https://github.com/coqui-ai/TTS))
 * [ ] File and directory organizer (organize files and directories based on content)
 * [ ] Right-click and hold brings up rotary menu for quick access to features (or keyboard shortcuts)
-* [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] RAG (Retrieval-Augmented Generation) model support
