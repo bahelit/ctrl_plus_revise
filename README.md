@@ -158,7 +158,7 @@ Contributions are welcome and will be fully credited.
 
 ## TODO
 * [ ] Custom keyboard shortcuts
-* [ ] Bring back pop-up dialog on keyboard shortcut as an option
+* [X] Bring back pop-up dialog on keyboard shortcut as an option
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
