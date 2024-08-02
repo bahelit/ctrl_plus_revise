@@ -10,6 +10,7 @@ import (
 	htgotts "github.com/hegedustibor/htgo-tts"
 	"github.com/hegedustibor/htgo-tts/handlers"
 	"github.com/hegedustibor/htgo-tts/voices"
+	"github.com/ollama/ollama/api"
 	hook "github.com/robotn/gohook"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
@@ -179,12 +180,12 @@ func handleUserShortcutKeyPressed() {
 		return
 	}
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 		"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
 	loadingScreen.Show()
 
-	generated, err := ollama.AskAIWithPromptMsg(ollamaClient, selectedPrompt, ollama.ModelName(model), clippy)
+	generated, err := ollama.AskAIWithPromptMsg(ollamaClient, ollama.ModelName(model), selectedPrompt, clippy)
 	if err != nil {
 		// TODO: Implement error handling, tell user to restart ollama, maybe we can restart ollama here?
 		slog.Error("Failed to communicate with Ollama", "error", err)
@@ -193,36 +194,7 @@ func handleUserShortcutKeyPressed() {
 	}
 	loadingScreen.Hide()
 
-	slog.Debug("lastClipboardContent", "lastClipboardContent", lastClipboardContent)
-
-	lastClipboardContent = sha256.Sum256([]byte(generated.Response))
-	err = clipboard.WriteAll(generated.Response)
-	if err != nil {
-		slog.Error("Failed to write to clipboard", "error", err)
-		return
-	}
-
-	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
-	if speakResponse {
-		if speech == nil {
-			initSpeech()
-		}
-		if speech != nil {
-			speakErr := speech.Speak(generated.Response)
-			if speakErr != nil {
-				slog.Error("Failed to speak", "error", speakErr)
-			}
-		}
-	}
-
-	// Send a paste command to the operating system
-	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
-	if replaceText {
-		err = pasteCommand()
-		if err != nil {
-			return
-		}
-	}
+	handleGeneratedResponse(clippy, &generated)
 }
 
 func handleAskKeyPressed() {
@@ -237,7 +209,7 @@ func handleAskKeyPressed() {
 		return
 	}
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 		"Asking question with model: "+ollama.ModelName(model).String())
 	loadingScreen.Show()
@@ -250,34 +222,7 @@ func handleAskKeyPressed() {
 	}
 	loadingScreen.Hide()
 
-	err = clipboard.WriteAll(generated.Response)
-	if err != nil {
-		slog.Error("Failed to write to clipboard", "error", err)
-		return
-	}
-	lastClipboardContent = sha256.Sum256([]byte(generated.Response))
-
-	// Send a paste command to the operating system
-	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
-	if replaceText {
-		err = pasteCommand()
-		if err != nil {
-			return
-		}
-	}
-
-	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
-	if speakResponse {
-		if speech == nil {
-			initSpeech()
-		}
-		if speech != nil {
-			speakErr := speech.Speak(generated.Response)
-			if speakErr != nil {
-				slog.Error("Failed to speak", "error", speakErr)
-			}
-		}
-	}
+	handleGeneratedResponse(clippy, &generated)
 }
 
 func handleTranslatePressed() {
@@ -298,7 +243,7 @@ func handleTranslatePressed() {
 	fromLang := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
 	toLang := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 		"Translating with model: "+ollama.ModelName(model).String()+"...")
 	loadingScreen.Show()
@@ -393,4 +338,42 @@ func copyTextToClipboard() (string, bool) {
 		return "", false
 	}
 	return clippy, true
+}
+
+func handleGeneratedResponse(question string, response *api.GenerateResponse) {
+	slog.Debug("lastClipboardContent", "lastClipboardContent", lastClipboardContent)
+
+	lastClipboardContent = sha256.Sum256([]byte(response.Response))
+	err := clipboard.WriteAll(response.Response)
+	if err != nil {
+		slog.Error("Failed to write to clipboard", "error", err)
+		return
+	}
+
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
+	if speakResponse {
+		if speech == nil {
+			initSpeech()
+		}
+		if speech != nil {
+			speakErr := speech.Speak(response.Response)
+			if speakErr != nil {
+				slog.Error("Failed to speak", "error", speakErr)
+			}
+		}
+	}
+
+	// Send a paste command to the operating system
+	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
+	if replaceText {
+		err = pasteCommand()
+		if err != nil {
+			return
+		}
+	}
+
+	showPopUp := guiApp.Preferences().BoolWithFallback(ShowPopUpKey, false)
+	if showPopUp {
+		questionPopUp(guiApp, question, response)
+	}
 }

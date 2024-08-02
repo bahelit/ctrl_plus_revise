@@ -22,6 +22,7 @@ import (
 const (
 	ReplaceHighlightedText  = "ReplaceHighlightedText"
 	SpeakAIResponseKey      = "SpeakAIResponseKey"
+	ShowPopUpKey            = "ShowPopUpKey"
 	ShowStartWindowKey      = "showStartWindow"
 	firstRunKey             = "firstRun"
 	CurrentPromptKey        = "lastPrompt"
@@ -37,6 +38,7 @@ var (
 	aiModelDropdown  *widget.Select
 )
 
+//nolint:funlen // This function is long because it sets up the system tray
 func SetupSysTray(guiApp fyne.App) fyne.Window {
 	err := setBindingVariables()
 	if err != nil {
@@ -71,12 +73,40 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 	}
 
 	// System tray window content
+	welcomeText := mainWindowText()
+
 	startUpCheckBox := showOnStartUpCheckBox(guiApp)
 	stopOllamaOnShutdownCheckbox := stopOllamaOnShutdownCheckBox(guiApp)
 	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
 	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
 	useDockerTextCheckBox := useDockerCheckBox(guiApp)
-	welcomeText := mainWindowText()
+	showPopUpCheckBox := showPopUpCheckbox(guiApp)
+
+	replaceHighlightedTextCheckBox.OnChanged = func(b bool) {
+		if b {
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, true)
+			guiApp.Preferences().SetBool(ShowPopUpKey, false)
+			showPopUpCheckBox.Checked = false
+			showPopUpCheckBox.Refresh()
+			slog.Debug("Replace highlighted text is on")
+		} else {
+			slog.Debug("Replace highlighted text is off")
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
+		}
+	}
+	showPopUpCheckBox.OnChanged = func(b bool) {
+		if b {
+			guiApp.Preferences().SetBool(ShowPopUpKey, true)
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
+			replaceHighlightedTextCheckBox.Checked = false
+			replaceHighlightedTextCheckBox.Refresh()
+			slog.Debug("Show Pop-Up is on")
+		} else {
+			slog.Debug("Show Pop-Up is off")
+			guiApp.Preferences().SetBool(ShowPopUpKey, false)
+		}
+	}
+
 	hideWindowButton := widget.NewButton("Hide This Window", func() {
 		sysTray.Hide()
 	})
@@ -94,6 +124,7 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 		layout.Responsive(speakAIResponseTextCheckBox),
 		layout.Responsive(replaceHighlightedTextCheckBox),
 		layout.Responsive(useDockerTextCheckBox),
+		layout.Responsive(showPopUpCheckBox),
 		layout.Responsive(startUpCheckBox),
 		layout.Responsive(stopOllamaOnShutdownCheckbox))
 
@@ -171,10 +202,10 @@ func mainWindowText() *fyne.Container {
 func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 	openStartWindow := guiApp.Preferences().BoolWithFallback(ShowStartWindowKey, true)
 	startUpCheck := widget.NewCheck("Show this window on startup", func(b bool) {
-		if b == false {
+		if !b {
 			slog.Debug("Hiding start window")
 			guiApp.Preferences().SetBool(ShowStartWindowKey, false)
-		} else if b == true {
+		} else if b {
 			guiApp.Preferences().SetBool(ShowStartWindowKey, true)
 			slog.Debug("Showing start window")
 		}
@@ -186,10 +217,10 @@ func showOnStartUpCheckBox(guiApp fyne.App) *widget.Check {
 func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
 	stopOllamaOnShutdown := guiApp.Preferences().BoolWithFallback(StopOllamaOnShutDownKey, true)
 	stopOllamaCheckbox := widget.NewCheck("Stop Ollama After Exiting", func(b bool) {
-		if b == false {
+		if !b {
 			slog.Debug("Leaving ollama running on shutdown")
 			guiApp.Preferences().SetBool(StopOllamaOnShutDownKey, false)
-		} else if b == true {
+		} else if b {
 			guiApp.Preferences().SetBool(StopOllamaOnShutDownKey, true)
 			slog.Debug("Stopping ollama on shutdown")
 		}
@@ -200,57 +231,43 @@ func stopOllamaOnShutdownCheckBox(guiApp fyne.App) *widget.Check {
 
 func replaceHighlightedCheckbox(guiApp fyne.App) *widget.Check {
 	replaceText := guiApp.Preferences().BoolWithFallback(ReplaceHighlightedText, true)
-	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
-	runOnCopy := widget.NewCheck("Auto paste text with AI response", func(b bool) {
-		if b == false {
+	runOnCopy := widget.NewCheck("Paste AI Response", func(b bool) {
+		if !b {
 			slog.Debug("Replace highlighted checkbox is off")
 			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
-			if speakAIResponse {
-				go func() {
-					speakErr := speech.Speak("Highlighted text will be appended with an AI response.")
-					if speakErr != nil {
-						slog.Error("Failed to speak", "error", speakErr)
-					}
-				}()
-			}
-		} else if b == true {
+		} else if b {
 			slog.Debug("Replace highlighted checkbox is on")
 			guiApp.Preferences().SetBool(ReplaceHighlightedText, true)
-			if speakAIResponse {
-				go func() {
-					speakErr := speech.Speak("Highlighted text will be replaced with AI response.")
-					if speakErr != nil {
-						slog.Error("Failed to speak", "error", speakErr)
-					}
-				}()
-			}
 		}
 	})
 	runOnCopy.Checked = replaceText
 	return runOnCopy
 }
 
+func showPopUpCheckbox(guiApp fyne.App) *widget.Check {
+	showPopUp := guiApp.Preferences().BoolWithFallback(ShowPopUpKey, false)
+	popup := widget.NewCheck("Show Revise Window", func(b bool) {
+		if !b {
+			slog.Debug("Turning off PopUp mode")
+			guiApp.Preferences().SetBool(ShowPopUpKey, false)
+		} else if b {
+			slog.Debug("Turning on PopUp mode")
+			guiApp.Preferences().SetBool(ShowPopUpKey, true)
+		}
+	})
+	popup.Checked = showPopUp
+	return popup
+}
+
 func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
 	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	speakAI := widget.NewCheck("Speak AI through speakers", func(b bool) {
-		if b == false {
+		if !b {
 			slog.Debug("Turning off Speech mode")
 			guiApp.Preferences().SetBool(SpeakAIResponseKey, false)
-			go func() {
-				speakErr := speech.Speak("Turning off Speech mode.")
-				if speakErr != nil {
-					slog.Error("Failed to speak", "error", speakErr)
-				}
-			}()
-		} else if b == true {
+		} else if b {
 			slog.Debug("Turning on Speech mode")
 			guiApp.Preferences().SetBool(SpeakAIResponseKey, true)
-			go func() {
-				speakErr := speech.Speak("Turning on Speech mode.")
-				if speakErr != nil {
-					slog.Error("Failed to speak", "error", speakErr)
-				}
-			}()
 		}
 	})
 	speakAI.Checked = speakAIResponse
@@ -260,7 +277,7 @@ func speakAIResponseCheckbox(guiApp fyne.App) *widget.Check {
 func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 	userDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
 	userDockerCheck := widget.NewCheck("Run AI in Docker", func(b bool) {
-		if b == false {
+		if !b {
 			slog.Debug("Not using Docker")
 			guiApp.Preferences().SetBool(UseDockerKey, false)
 			docker.StopOllamaContainer()
@@ -285,7 +302,7 @@ func useDockerCheckBox(guiApp fyne.App) *widget.Check {
 					}
 				}()
 			}
-		} else if b == true {
+		} else if b {
 			slog.Debug("Using Docker")
 			guiApp.Preferences().SetBool(UseDockerKey, true)
 			go func() {
@@ -359,6 +376,7 @@ func selectCopyActionDropDown() *widget.Select {
 	return combo
 }
 
+//nolint:gocyclo
 func selectAIModelDropDown() *widget.Select {
 	var (
 		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
@@ -445,7 +463,7 @@ func selectAIModelDropDown() *widget.Select {
 				_ = PullModelWrapper(selectedModel, false)
 			}
 		})
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	selection := itemAndText[ollama.ModelName(model)]
 	slog.Debug("Selected model", "model", selection)
 	combo.SetSelected(selection)
@@ -679,7 +697,7 @@ func ChangedPromptNotification() {
 }
 
 func setBindingVariables() error {
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	err := selectedModelBinding.Set(model)
 	if err != nil {
 		slog.Error("Failed to set selectedModelBinding", "error", err)

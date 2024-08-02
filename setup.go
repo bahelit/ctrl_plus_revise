@@ -28,7 +28,7 @@ func sayHello() {
 
 func fetchModel() {
 	// Pull the model on startup, will pull updated model if available
-	model := ollama.ModelName(guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3)))
+	model := ollama.ModelName(guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1)))
 	err := PullModelWrapper(model, false)
 	if err != nil {
 		slog.Error("Failed to pull model", "error", err)

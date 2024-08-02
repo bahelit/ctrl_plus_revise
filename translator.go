@@ -90,7 +90,7 @@ func handleTranslateRequest(from, to *widget.Entry) {
 	fromLang := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
 	toLang := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3))
+	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 		"Translating with model: "+ollama.ModelName(model).String()+"...")
 	loadingScreen.Show()

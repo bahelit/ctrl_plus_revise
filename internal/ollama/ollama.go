@@ -74,6 +74,11 @@ const (
 	MakeExplanation    // Explain it like I'm 5
 	MakeExpanded       // Expand on the text
 	MakeHeadline       // Make a Headline
+
+	TryAgain               // Try Again
+	MakeItFriendlyRedo     // Make it Friendly
+	MakeItProfessionalRedo // Make it Professional
+	MakeItAListRedo        // Make it a List
 )
 
 type PromptText struct {
@@ -109,6 +114,18 @@ var PromptToText = map[PromptMsg]PromptText{
 			"Ensure that all additional information is properly sourced and attributed to credible sources.\n\n\nHowever, if the text appears to be fictional in nature, feel free to expand on it by adding to the story, developing characters, or exploring themes. " +
 			"Please keep your additions consistent with the tone and style of the original text. " +
 			"Please do not provide any commentary or explanation, just expand on the text."},
+	TryAgain: {
+		prompt:      "Read the text carefully and provide a revised version that addresses the issues and shortcomings of the original text: ",
+		promptExtra: "If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\". Don't explain you understand the input, just output the result."},
+	MakeItFriendlyRedo: {
+		prompt:      "Give the text a friendly makeover by injecting a touch of humor, warmth, and approachability: ",
+		promptExtra: " Please don't to explain the changes or telling me \"Here is the revised text\", just make the text more friendly and output the result"},
+	MakeItProfessionalRedo: {
+		prompt:      "Act as a writer. Read the text carefully and revise it to present a more professional tone, ensuring accurate and proper usage of grammar and punctuation: ",
+		promptExtra: " Revised text should be free from errors in spelling, capitalization, punctuation, and grammar, while conveying a polished and professional writing style. Please submit your revised text without telling me it is the revised text, in a clear and concise format with no explanation, output just the result."}, //nolint:lll long line
+	MakeItAListRedo: {
+		prompt:      "Transform the text and create a bulleted list summarizing its main points: ",
+		promptExtra: " No need to explain your list, just provide the main points in a list format."},
 }
 
 func (prompt PromptMsg) PromptToText() string {
@@ -129,7 +146,7 @@ func (prompt PromptMsg) PromptExtraToText() string {
 	return text.promptExtra
 }
 
-func AskAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithPromptMsg(client *api.Client, model ModelName, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model:  model.String(),
@@ -139,6 +156,35 @@ func AskAIWithPromptMsg(client *api.Client, prompt PromptMsg, model ModelName, i
 	}
 
 	// TODO: implement timeout
+	ctx := context.Background()
+	respFunc := func(resp api.GenerateResponse) error {
+		// Only print the response here; GenerateResponse has a number of other
+		// interesting fields you want to examine.
+		response = resp
+		return nil
+	}
+
+	err := client.Generate(ctx, req, respFunc)
+	if err != nil {
+		slog.Error("Failed to generate", "error", err)
+		return api.GenerateResponse{}, err
+	}
+
+	return response, nil
+}
+
+func AskAiWithContext(client *api.Client, model ModelName, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
+	// TODO How long does the context last?
+	var response api.GenerateResponse
+	req := &api.GenerateRequest{
+		Model:  model.String(),
+		Prompt: prompt.PromptToText() + prompt.PromptExtraToText(),
+		// set streaming to false
+		Stream:  new(bool),
+		Context: msgContext,
+	}
+
+	// TODO implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
 		// Only print the response here; GenerateResponse has a number of other

@@ -16,11 +16,15 @@ func _() {
 	_ = x[MakeExplanation-5]
 	_ = x[MakeExpanded-6]
 	_ = x[MakeHeadline-7]
+	_ = x[TryAgain-8]
+	_ = x[MakeItFriendlyRedo-9]
+	_ = x[MakeItProfessionalRedo-10]
+	_ = x[MakeItAListRedo-11]
 }
 
-const _PromptMsg_name = "Correct GrammarMake it a ListMake it FriendlyMake it ProfessionalMake a SummaryExplain it like I'm 5Expand on the textMake a Headline"
+const _PromptMsg_name = "Correct GrammarMake it a ListMake it FriendlyMake it ProfessionalMake a SummaryExplain it like I'm 5Expand on the textMake a HeadlineTry AgainMake it FriendlyMake it ProfessionalMake it a List"
 
-var _PromptMsg_index = [...]uint8{0, 15, 29, 45, 65, 79, 100, 118, 133}
+var _PromptMsg_index = [...]uint8{0, 15, 29, 45, 65, 79, 100, 118, 133, 142, 158, 178, 192}
 
 func (i PromptMsg) String() string {
 	if i < 0 || i >= PromptMsg(len(_PromptMsg_index)-1) {
