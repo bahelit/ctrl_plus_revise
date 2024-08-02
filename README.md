@@ -7,11 +7,7 @@
   </p>
 </div>
 
-  ![license](https://badgen.net/github/license/bahelit/ctrl_plus_revise)
-
-* [Project overview](#project-overview)
-* [Getting Started](#getting-started)
-* [Developing Ctrl+Revise](#developing)
+  [![Discord](https://dcbadge.vercel.app/api/server/ollama?style=flat&compact=true)](https://discord.gg/TYBtGUdVBU)
 
 # Ctrl+Revise
 
