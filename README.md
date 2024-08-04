@@ -7,7 +7,7 @@
   </p>
 </div>
 
-[![Discord](https://dcbadge.vercel.app/api/server/bahelit?style=plastic)](https://discord.gg/TYBtGUdVBU)
+[![Discord](https://invidget.switchblade.xyz/TYBtGUdVBU)](https://discord.gg/TYBtGUdVBU)
 
 # Ctrl+Revise
 
