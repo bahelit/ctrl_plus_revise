@@ -32,8 +32,8 @@ modules:
       - install -Dm0755 ollama* /app/bin/ollama
     sources:
       - type: file
-        url: "https://github.com/ollama/ollama/releases/download/v0.1.48/ollama-linux-amd64"
-        sha256: 7641b21e9d0822ba44e494f5ed3d3796d9e9fcdf4dbb66064f8c34c865bbec0b
+        url: "https://github.com/ollama/ollama/releases/download/v0.3.3/ollama-linux-amd64"
+        sha256: 2b2a4ee4c86fa5b09503e95616bd1b3ee95238b1b3bf12488b9c27c66b84061a
         only-arches: [ x86_64 ]
   - name: setup
     buildsystem: simple

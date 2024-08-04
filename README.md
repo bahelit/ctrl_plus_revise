@@ -7,7 +7,7 @@
   </p>
 </div>
 
-  [![Discord](https://dcbadge.vercel.app/api/server/ollama?style=flat&compact=true)](https://discord.gg/TYBtGUdVBU)
+[![Discord](https://dcbadge.vercel.app/api/server/bahelit?style=plastic)](https://discord.gg/TYBtGUdVBU)
 
 # Ctrl+Revise
 
@@ -153,17 +153,18 @@ make stringer
 Contributions are welcome and will be fully credited.
 
 ## TODO
-* [ ] Custom keyboard shortcuts
 * [X] Bring back pop-up dialog on keyboard shortcut as an option
+* [ ] Windows - Fix modal download notification spamming.
+* [ ] UI Improvement - show the model download progress percentage
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
 * [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
 * [ ] Docker - pull based on GPU type
+* [ ] Custom keyboard shortcuts
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
-* [ ] UI Improvement - show the model download progress percentage
 * [ ] Improve Docker support - Check for new versions of Ollama and update
 * [ ] Improve model management - Ability to remove models
 * [ ] Image support (detect what is in the image using Llava or similar models)
