@@ -39,7 +39,6 @@ func main() {
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
 
 	// Prepare the loading screen and system tray
-	LoadIcon(guiApp)
 	startupWindow := gui.StartupScreen(guiApp)
 	sysTray := SetupSysTray(guiApp)
 	if guiApp.Preferences().BoolWithFallback(ShowStartWindowKey, true) {
@@ -47,6 +46,7 @@ func main() {
 		sysTray.Show()
 		startupWindow.Show()
 	}
+	LoadIcon(guiApp)
 
 	// Start the services
 	detectProcessingDevice()
