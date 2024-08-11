@@ -1,4 +1,4 @@
-package main
+package hardware
 
 import (
 	"log/slog"
@@ -13,20 +13,20 @@ const (
 	nvidiaDriver = "nvidia"
 )
 
-// gpu Processing devices used for AI inference
+// GPU Processing devices used for AI inference
 //
-//go:generate stringer -linecomment -type=gpu
-type gpu int
+//go:generate stringer -linecomment -type=GPU
+type GPU int
 
 const (
-	amdGPU    gpu = iota // AMD
-	nvidiaGPU            // Nvidia
-	noGPU                // CPU
+	AMD    GPU = iota // AMD
+	NVIDIA            // Nvidia
+	noGPU             // CPU
 )
 
 // DetectMemory detects the memory of the system
 // TODO: Use to determine if we can run certain AI models
-func detectMemory() {
+func DetectMemory() {
 	ram, err := ghw.Memory()
 	if err != nil {
 		slog.Info("Error getting Memory info", "error", err)
@@ -40,7 +40,7 @@ func detectMemory() {
 	slog.Info("System Memory", "Total", total, "Available", usable)
 }
 
-func detectProcessingDevice() gpu {
+func DetectProcessingDevice() GPU {
 	gpu, err := ghw.GPU()
 	if err != nil {
 		slog.Info("Error getting GPU info", "error", err)
@@ -58,20 +58,20 @@ func detectProcessingDevice() gpu {
 		}
 		if card.DeviceInfo.Driver == amdDriver {
 			slog.Info("Detected AMD GPU", "Product", card.DeviceInfo.Product.Name)
-			foundGPU = amdGPU
+			foundGPU = AMD
 			break
 		} else if card.DeviceInfo.Driver == nvidiaDriver {
 			slog.Info("Detected Nvidia GPU", "Product", card.DeviceInfo.Product.Name)
-			foundGPU = nvidiaGPU
+			foundGPU = NVIDIA
 			break
 		}
 	}
 
 	switch foundGPU {
-	case amdGPU:
-		return amdGPU
-	case nvidiaGPU:
-		return nvidiaGPU
+	case AMD:
+		return AMD
+	case NVIDIA:
+		return NVIDIA
 	default:
 		slog.Info("No GPU Detected, using CPU")
 		return noGPU

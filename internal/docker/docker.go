@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"github.com/bahelit/ctrl_plus_revise/internal/hardware"
 	"io"
 	"log/slog"
 	"os"
@@ -15,6 +16,7 @@ import (
 const (
 	ollamaStartName     = "ollama"
 	ollamaContainerName = "/ollama"
+	ollamaTagNvidia     = "ollama/ollama"
 	ollamaTagRocm       = "ollama/ollama:rocm"
 )
 
@@ -79,9 +81,18 @@ func removeContainerImage(cli *docker.Client, id string) {
 
 func pullOllamaImage(cli *docker.Client) error {
 	ctx := context.Background()
+	var (
+		reader io.ReadCloser
+		err    error
+	)
 
 	// TODO: Allow user to specify image AMD or Nvidia images
-	reader, err := cli.ImagePull(ctx, ollamaTagRocm, image.PullOptions{})
+	computeDevice := hardware.DetectProcessingDevice()
+	if computeDevice == hardware.AMD {
+		reader, err = cli.ImagePull(ctx, ollamaTagRocm, image.PullOptions{})
+	} else {
+		reader, err = cli.ImagePull(ctx, ollamaTagNvidia, image.PullOptions{})
+	}
 	if err != nil {
 		slog.Error("Failed to pull image", "error", err)
 		return err
@@ -166,7 +177,10 @@ func startOllamaExistingContainer(cli *docker.Client, id string) error {
 }
 
 // startOllamaFirstTime starts the Ollama container
-// cmd: docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
+// AMD cmd: docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
+// NVIDIA cmd: docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --restart=always --name ollama ollama/ollama
+// CPU cmd: docker run -d -v ollama:/root/.ollama -p 11434:11434 --restart=always --name ollama ollama/ollama
+// https://hub.docker.com/r/ollama/ollama
 func startOllamaFirstTime(cli *docker.Client) error {
 	ctx := context.Background()
 	var (
@@ -174,6 +188,8 @@ func startOllamaFirstTime(cli *docker.Client) error {
 		hostConfig   container.HostConfig
 		clientConfig container.Config
 	)
+
+	computeDevice := hardware.DetectProcessingDevice()
 
 	containerPort, err := nat.NewPort("tcp", "11434")
 	if err != nil {
@@ -186,24 +202,35 @@ func startOllamaFirstTime(cli *docker.Client) error {
 	}
 	hostConfig.PortBindings = nat.PortMap{containerPort: []nat.PortBinding{hostBinding}}
 
-	// Required for AMD Graphics devices
-	device1 := container.DeviceMapping{
-		PathOnHost:        "/dev/kfd",
-		PathInContainer:   "/dev/kfd",
-		CgroupPermissions: "rwm"}
-	device2 := container.DeviceMapping{
-		PathOnHost:        "/dev/dri",
-		PathInContainer:   "/dev/dri",
-		CgroupPermissions: "rwm"}
-	devices = append(devices, device1, device2)
-	hostConfig.Devices = append(hostConfig.Devices, devices...)
+	if computeDevice == hardware.AMD {
+		// Required for AMD Graphics devices
+		device1 := container.DeviceMapping{
+			PathOnHost:        "/dev/kfd",
+			PathInContainer:   "/dev/kfd",
+			CgroupPermissions: "rwm"}
+		device2 := container.DeviceMapping{
+			PathOnHost:        "/dev/dri",
+			PathInContainer:   "/dev/dri",
+			CgroupPermissions: "rwm"}
+		devices = append(devices, device1, device2)
+		hostConfig.Devices = append(hostConfig.Devices, devices...)
+		clientConfig.Image = ollamaTagRocm
+	} else if computeDevice == hardware.NVIDIA {
+		err = os.Setenv("NVIDIA_VISIBLE_DEVICES", "all")
+		if err != nil {
+			slog.Error("Failed to set NVIDIA_VISIBLE_DEVICES", "error", err)
+		}
+		err = os.Setenv("NVIDIA_DRIVER_CAPABILITIES", "compute,utility")
+		if err != nil {
+			slog.Error("Failed to set NVIDIA_DRIVER_CAPABILITIES", "error", err)
+		}
+	}
+	clientConfig.Image = ollamaTagNvidia
 	hostConfig.RestartPolicy = container.RestartPolicy{Name: "always"}
 
 	// Required for persistent storage
 	hostConfig.Binds = []string{"ollama:/root/.ollama"}
 	clientConfig.Volumes = map[string]struct{}{"/root/.ollama": {}}
-
-	clientConfig.Image = ollamaTagRocm
 
 	resp, err := cli.ContainerCreate(
 		ctx,

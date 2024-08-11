@@ -72,18 +72,6 @@ If users select to use [Docker](https://docker.com) to run Ollama, Ctrl+Revise w
 
 The official [Ollama Docker image](https://hub.docker.com/r/ollama/ollama) `ollama/ollama` is available on Docker Hub.
 
-_Docker command for CPUs:_
-```bash
-docker run -d -v ollama:/root/.ollama -p 11434:11434 --restart=always --name ollama ollama/ollama
-```
-_Docker command for Nvidia GPUs:_
-```bash
-docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --restart=always --name ollama ollama/ollama
-```
-_Docker command for AMD GPUs:_
-```bash
-docker run -d --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama --restart=always ollama/ollama:rocm
-```
 > [!NOTE]
 > The Docker integration is disabled by default and can be enabled in the settings.
 
@@ -161,12 +149,12 @@ Contributions are welcome and will be fully credited.
 * [ ] Create AppImage package
 * [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
-* [ ] Docker - pull based on GPU type
+* [X] Docker - pull based on GPU type
 * [X] Custom keyboard shortcuts
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
 * [ ] Improve Docker support - Check for new versions of Ollama and update
-* [ ] Improve model management - Ability to remove models
+* [ ] Improve model management - Ability to delete models
 * [ ] Image support (detect what is in the image using Llava or similar models)
 * [ ] Image OCR support (read text out of an image using Llava or similar models)
 * [ ] Localized language support ([go-i18n](https://github.com/nicksnyder/go-i18n))

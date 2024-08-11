@@ -16,6 +16,7 @@ import (
 	hook "github.com/robotn/gohook"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
+	"github.com/bahelit/ctrl_plus_revise/internal/hardware"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
@@ -51,8 +52,8 @@ func main() {
 	LoadIcon(guiApp)
 
 	// Start the services
-	detectProcessingDevice()
-	detectMemory()
+	hardware.DetectProcessingDevice()
+	hardware.DetectMemory()
 	go func() {
 		connectedToOllama := setupServices()
 		if !connectedToOllama {
