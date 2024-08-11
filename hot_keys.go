@@ -3,27 +3,28 @@ package main
 import (
 	"crypto/sha256"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/go-vgo/robotgo"
 	htgotts "github.com/hegedustibor/htgo-tts"
-	"github.com/hegedustibor/htgo-tts/handlers"
-	"github.com/hegedustibor/htgo-tts/voices"
 	"github.com/ollama/ollama/api"
 	hook "github.com/robotn/gohook"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/bahelit/ctrl_plus_revise/pkg/clipboard"
-	dirsize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
 	"github.com/bahelit/ctrl_plus_revise/pkg/throttle"
 )
 
 const (
 	thinkingMsg = "Thinking..."
 )
+
+type keyBoardShortcut struct {
+	ModifierKey1 string
+	ModifierKey2 *string
+	Key          string
+}
 
 var (
 	th                    = throttle.NewThrottle(1)
@@ -33,12 +34,15 @@ var (
 	waitBetweenKeyPresses = 1 * time.Second
 	keyPressSleep         = 250
 	firstRun              = true
+	askKey                = keyBoardShortcut{ModifierKey1: "alt", Key: "a"}
+	ctrlReviseKey         = keyBoardShortcut{ModifierKey1: "alt", Key: "c"}
+	translateKey          = keyBoardShortcut{ModifierKey1: "alt", Key: "t"}
 )
 
 // RegisterHotkeys registers the hotkeys for the application
 // TODO: Allow users changes the mappings
-func RegisterHotkeys() {
-	hook.Register(hook.KeyDown, []string{"a", "alt"}, func(e hook.Event) {
+func RegisterHotkeys() chan hook.Event {
+	hook.Register(hook.KeyDown, getAskKeys(), func(e hook.Event) {
 		slog.Debug("askKey has been pressed", "event", e)
 		if time.Since(lastKeyPressTime) < waitBetweenKeyPresses {
 			slog.Info("Ignoring key press", "waitBetweenKeyPresses", waitBetweenKeyPresses)
@@ -49,8 +53,8 @@ func RegisterHotkeys() {
 		handleAskKeyPressed()
 		lastKeyPressTime = time.Now()
 	})
-	hook.Register(hook.KeyDown, []string{"c", "alt"}, func(e hook.Event) {
-		slog.Debug("userShortcutKey has been pressed", "event", e)
+	hook.Register(hook.KeyDown, getCtrlReviseKeys(), func(e hook.Event) {
+		slog.Debug("ctrlReviseKey has been pressed", "event", e)
 		if time.Since(lastKeyPressTime) < waitBetweenKeyPresses {
 			slog.Info("Ignoring key press", "waitBetweenKeyPresses", waitBetweenKeyPresses)
 			return
@@ -81,7 +85,7 @@ func RegisterHotkeys() {
 		handleReadTextPressed()
 		lastKeyPressTime = time.Now()
 	})
-	hook.Register(hook.KeyDown, []string{"t", "alt"}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, getTranslateKeys(), func(e hook.Event) {
 		slog.Debug("translateTextKey has been pressed", "event", e)
 		if time.Since(lastKeyPressTime) < waitBetweenKeyPresses {
 			slog.Info("Ignoring key press", "waitBetweenKeyPresses", waitBetweenKeyPresses)
@@ -92,22 +96,86 @@ func RegisterHotkeys() {
 		handleTranslatePressed()
 		lastKeyPressTime = time.Now()
 	})
-	initSpeech()
+
 	slog.Info("Registered hotkeys")
 
-	s := hook.Start()
-	defer hook.End()
-	<-hook.Process(s)
+	return hook.Start()
 }
 
-func initSpeech() {
-	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
-	if speakResponse {
-		// TODO: the audio files need to be cleaned up periodically.
-		speech = &htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
-		dirInfo, _ := dirsize.GetDirInfo(os.DirFS("audio"))
-		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
-		_ = speech.Speak("")
+func startKeyboardListener() bool {
+	systemHook = RegisterHotkeys()
+	return <-hook.Process(systemHook)
+}
+
+func getAskKeys() []string {
+	if askKey.ModifierKey2 == nil {
+		return []string{askKey.ModifierKey1, askKey.Key}
+	}
+	return []string{askKey.ModifierKey1, *askKey.ModifierKey2, askKey.Key}
+}
+
+func getCtrlReviseKeys() []string {
+	if ctrlReviseKey.ModifierKey2 == nil {
+		return []string{ctrlReviseKey.ModifierKey1, ctrlReviseKey.Key}
+	}
+	return []string{ctrlReviseKey.ModifierKey1, *ctrlReviseKey.ModifierKey2, ctrlReviseKey.Key}
+}
+
+func getTranslateKeys() []string {
+	if translateKey.ModifierKey2 == nil {
+		return []string{translateKey.ModifierKey1, translateKey.Key}
+	}
+	return []string{translateKey.ModifierKey1, *translateKey.ModifierKey2, translateKey.Key}
+}
+
+//nolint:gocyclo // This function is a switch statement and is not complex
+func setKeyBoardShortcutKey(action KeyAction, key KeyType, value string) {
+	var empty string = EmptySelection
+	switch action {
+	case AskQuestion:
+		switch key {
+		case ModifierKey1:
+			askKey.ModifierKey1 = value
+		case ModifierKey2:
+			if value == EmptySelection {
+				askKey.ModifierKey2 = &empty
+				break
+			}
+			askKey.ModifierKey2 = &value
+		case NormalKey:
+			askKey.Key = value
+		}
+		guiApp.Preferences().SetStringList(AskAIKeyboardShortcut, getAskKeys())
+	case CtrlRevise:
+		switch key {
+		case ModifierKey1:
+			ctrlReviseKey.ModifierKey1 = value
+		case ModifierKey2:
+			if value == EmptySelection {
+				ctrlReviseKey.ModifierKey2 = &empty
+				break
+			}
+			ctrlReviseKey.ModifierKey2 = &value
+		case NormalKey:
+			ctrlReviseKey.Key = value
+		}
+		guiApp.Preferences().SetStringList(CtrlReviseKeyboardShortcut, getCtrlReviseKeys())
+	case Translate:
+		switch key {
+		case ModifierKey1:
+			translateKey.ModifierKey1 = value
+		case ModifierKey2:
+			if value == EmptySelection {
+				translateKey.ModifierKey2 = &empty
+				break
+			}
+			translateKey.ModifierKey2 = &value
+		case NormalKey:
+			translateKey.Key = value
+		}
+		guiApp.Preferences().SetStringList(TranslateKeyboardShortcut, getTranslateKeys())
+	default:
+		slog.Error("Unknown action", "action", action)
 	}
 }
 
@@ -125,7 +193,6 @@ func handleCyclePromptKeyPressed() {
 	err = selectedPromptBinding.Set(selectedPrompt.String())
 	if err != nil {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
-
 	}
 	UpdateDropDownMenus()
 	ChangedPromptNotification()

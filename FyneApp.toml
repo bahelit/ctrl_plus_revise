@@ -3,6 +3,6 @@ Website = "https://ctrlplusrevise.com"
 [Details]
   Icon = "images/icon.png"
   Name = "Ctrl+Revise"
-  ID = "com.ctrl_plus_revise.app"
-  Version = "0.0.7"
-  Build = 3
+  ID = "com.ctrlplusrevise.app"
+  Version = "0.0.8"
+  Build = 6

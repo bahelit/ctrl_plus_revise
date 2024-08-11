@@ -154,7 +154,7 @@ Contributions are welcome and will be fully credited.
 
 ## TODO
 * [X] Bring back pop-up dialog on keyboard shortcut as an option
-* [ ] Windows - Fix modal download notification spamming.
+* [ ] Windows - Fix model download notification spamming.
 * [ ] UI Improvement - show the model download progress percentage
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
@@ -162,7 +162,7 @@ Contributions are welcome and will be fully credited.
 * [ ] Create Snap package
 * [ ] Settings menu for Ollama connection
 * [ ] Docker - pull based on GPU type
-* [ ] Custom keyboard shortcuts
+* [X] Custom keyboard shortcuts
 * [X] Windows, prevent console window from opening
 * [X] UI Improvement - fix window resizing issues in Ask A Question window
 * [ ] Improve Docker support - Check for new versions of Ollama and update

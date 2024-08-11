@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/layout"
 	"github.com/ollama/ollama/api"
@@ -20,17 +21,20 @@ import (
 )
 
 const (
-	ReplaceHighlightedText  = "ReplaceHighlightedText"
-	SpeakAIResponseKey      = "SpeakAIResponseKey"
-	ShowPopUpKey            = "ShowPopUpKey"
-	ShowStartWindowKey      = "showStartWindow"
-	firstRunKey             = "firstRun"
-	CurrentPromptKey        = "lastPrompt"
-	CurrentModelKey         = "lastModel"
-	CurrentFromLangKey      = "fromLang"
-	CurrentToLangKey        = "toLang"
-	StopOllamaOnShutDownKey = "stopOllamaOnShutDown"
-	UseDockerKey            = "useDocker"
+	ReplaceHighlightedText     = "ReplaceHighlightedText"
+	SpeakAIResponseKey         = "SpeakAIResponseKey"
+	ShowPopUpKey               = "ShowPopUpKey"
+	ShowStartWindowKey         = "showStartWindow"
+	firstRunKey                = "firstRun"
+	CurrentPromptKey           = "lastPrompt"
+	CurrentModelKey            = "lastModel"
+	CurrentFromLangKey         = "fromLang"
+	CurrentToLangKey           = "toLang"
+	StopOllamaOnShutDownKey    = "stopOllamaOnShutDown"
+	UseDockerKey               = "useDocker"
+	AskAIKeyboardShortcut      = "AskAIKeyboardShortcut"
+	CtrlReviseKeyboardShortcut = "CtrlReviseKeyboardShortcut"
+	TranslateKeyboardShortcut  = "TranslateKeyboardShortcut"
 )
 
 var (
@@ -110,7 +114,7 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 	hideWindowButton := widget.NewButton("Hide This Window", func() {
 		sysTray.Hide()
 	})
-	keyboardShortcutsButton := widget.NewButton("Show Keyboard Shortcuts", func() {
+	keyboardShortcutsButton := widget.NewButton("Configure Keyboard Shortcuts", func() {
 		showShortcuts(guiApp)
 	})
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
@@ -376,11 +380,11 @@ func selectCopyActionDropDown() *widget.Select {
 	return combo
 }
 
-//nolint:gocyclo
+//nolint:gocyclo // it's a GUI function
 func selectAIModelDropDown() *widget.Select {
 	var (
 		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
-		llama3          = "Llama 3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String() + " (Default)"
+		llama3          = "Llama 3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String()
 		codeLlama       = "CodeLlama - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama].String()
 		codeLlama13b    = "CodeLlama 13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
 		codeGemma       = "CodeGemma - RAM Usage: " + ollama.MemoryUsage[ollama.CodeGemma].String()
@@ -564,29 +568,36 @@ func showAbout(guiApp fyne.App) {
 	about.Show()
 }
 
+//nolint:funlen // it's a GUI function
 func showShortcuts(guiApp fyne.App) {
 	slog.Debug("Showing Shortcuts")
-	shortCuts := guiApp.NewWindow("Ctrl+Revise Shortcuts")
+	shortCuts := guiApp.NewWindow("Ctrl+Revise Keyboard Shortcuts")
 
 	var grid *fyne.Container
 
-	label1 := widget.NewLabel("Ask a Question with highlighted text")
-	value1 := widget.NewLabel("Alt + A")
-	value1.TextStyle = fyne.TextStyle{Bold: true}
+	warn := widget.NewIcon(theme.WarningIcon())
+	restartToReload := widget.NewLabelWithStyle("Restart application for changes to take effect", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	restartForChanges := container.NewGridWithRows(2, warn, restartToReload)
 
-	label2 := widget.NewLabel("Replace highlighted text with: ")
+	askLabel := widget.NewLabel("\nAsk a Question with highlighted text")
+	askModDropdown1 := keyboardModifierButtonsDropDown(AskQuestion, ModifierKey1)
+	askModDropdown2 := keyboardModifierButtonsDropDown(AskQuestion, ModifierKey2)
+	askKeyDropdown1 := keyboardModifierButtonsDropDown(AskQuestion, NormalKey)
+
+	reviseLabel := widget.NewLabel("Selected Revise Action: ")
 	label2Binding := widget.NewLabelWithData(selectedPromptBinding)
-	value2 := widget.NewLabel("Alt + C")
-	value2.TextStyle = fyne.TextStyle{Bold: true}
-	hbox := container.NewHBox(label2, label2Binding)
+	hBox := container.NewGridWithColumns(2, reviseLabel, label2Binding)
+	ctrlReviseModDropdown1 := keyboardModifierButtonsDropDown(CtrlRevise, ModifierKey1)
+	ctrlReviseModDropdown2 := keyboardModifierButtonsDropDown(CtrlRevise, ModifierKey2)
+	ctrlReviseKeyDropdown1 := keyboardModifierButtonsDropDown(CtrlRevise, NormalKey)
 
-	label3 := widget.NewLabel("Cycle through the prompt options")
-	value3 := widget.NewLabel("Alt + P")
-	value3.TextStyle = fyne.TextStyle{Bold: true}
+	cyclePromptLabel := widget.NewLabel("\nCycle through the prompt options")
+	cyclePromptValue := widget.NewLabel("Alt + P")
+	cyclePromptValue.TextStyle = fyne.TextStyle{Bold: true}
 
-	label4 := widget.NewLabel("Read the highlighted text")
-	value4 := widget.NewLabel("Alt + R")
-	value4.TextStyle = fyne.TextStyle{Bold: true}
+	readerLabel := widget.NewLabel("\nRead the highlighted text")
+	readerValue := widget.NewLabel("Alt + R")
+	readerValue.TextStyle = fyne.TextStyle{Bold: true}
 
 	from, err := translationFromBinding.Get()
 	if err != nil {
@@ -597,14 +608,26 @@ func showShortcuts(guiApp fyne.App) {
 		slog.Error("Failed to get translationToBinding", "error", err)
 	}
 	slog.Info("Translation languages", "from", from, "to", to)
-	label5 := widget.NewLabel("Translate the highlighted text, From: " + from + " To: " + to)
-	value5 := widget.NewLabel("Alt + T")
-	value5.TextStyle = fyne.TextStyle{Bold: true}
+	translateLabel := widget.NewLabel("\nTranslate the highlighted text, From: " + from + " To: " + to)
+	translateKeyModDropdown1 := keyboardModifierButtonsDropDown(Translate, ModifierKey1)
+	translateKeyModDropdown2 := keyboardModifierButtonsDropDown(Translate, ModifierKey2)
+	translateKeyDropdown1 := keyboardModifierButtonsDropDown(Translate, NormalKey)
+
+	askKeys := container.NewAdaptiveGrid(lengthOfKeyBoardShortcuts, askModDropdown1, askModDropdown2, askKeyDropdown1)
+	ctrlReviseKeys := container.NewAdaptiveGrid(lengthOfKeyBoardShortcuts, ctrlReviseModDropdown1, ctrlReviseModDropdown2, ctrlReviseKeyDropdown1)
+	translateKeys := container.NewAdaptiveGrid(lengthOfKeyBoardShortcuts, translateKeyModDropdown1, translateKeyModDropdown2, translateKeyDropdown1)
+
+	grid = layout.NewResponsiveLayout(
+		restartForChanges,
+		hBox, ctrlReviseKeys,
+		askLabel, askKeys,
+		translateLabel, translateKeys,
+		cyclePromptLabel, cyclePromptValue)
+
 	speakAIResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
 	if speakAIResponse {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label3, value3, label4, value4, label5, value5)
-	} else {
-		grid = layout.NewResponsiveLayout(label1, value1, hbox, value2, label4, value4, label5, value5)
+		grid.Add(readerLabel)
+		grid.Add(readerValue)
 	}
 	shortCuts.SetContent(grid)
 	shortCuts.Show()

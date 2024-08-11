@@ -8,9 +8,17 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	htgotts "github.com/hegedustibor/htgo-tts"
+	"github.com/hegedustibor/htgo-tts/handlers"
+	"github.com/hegedustibor/htgo-tts/voices"
+
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
+	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
+	dirsize "github.com/bahelit/ctrl_plus_revise/pkg/dir_size"
 )
+
+const lengthOfKeyBoardShortcuts = 3
 
 func sayHello() {
 	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
@@ -87,6 +95,35 @@ func setupServices() bool {
 	return startOllama()
 }
 
+func setKeyboardShortcuts() {
+	ask := guiApp.Preferences().StringListWithFallback(AskAIKeyboardShortcut, getAskKeys())
+	askKey.ModifierKey1 = ask[0]
+	if len(ask) == lengthOfKeyBoardShortcuts && ask[1] != EmptySelection {
+		askKey.ModifierKey2 = &ask[1]
+		askKey.Key = ask[2]
+	} else {
+		askKey.Key = ask[1]
+	}
+
+	revise := guiApp.Preferences().StringListWithFallback(CtrlReviseKeyboardShortcut, getAskKeys())
+	ctrlReviseKey.ModifierKey1 = revise[0]
+	if len(revise) == lengthOfKeyBoardShortcuts && ask[1] != EmptySelection {
+		ctrlReviseKey.ModifierKey2 = &revise[1]
+		ctrlReviseKey.Key = revise[2]
+	} else {
+		ctrlReviseKey.Key = revise[1]
+	}
+
+	translate := guiApp.Preferences().StringListWithFallback(TranslateKeyboardShortcut, getAskKeys())
+	translateKey.ModifierKey1 = translate[0]
+	if len(translate) == lengthOfKeyBoardShortcuts && ask[1] != EmptySelection {
+		translateKey.ModifierKey2 = &translate[1]
+		translateKey.Key = translate[2]
+	} else {
+		translateKey.Key = translate[1]
+	}
+}
+
 func startOllama() (connectedToOllama bool) {
 	versionCMD := exec.Command("ollama", "--version")
 	err := versionCMD.Run()
@@ -129,5 +166,16 @@ func stopOllama(p int) {
 	err = ollamaProcess.Kill()
 	if err != nil {
 		slog.Error("Failed to find process", "error", err)
+	}
+}
+
+func initSpeech() {
+	speakResponse := guiApp.Preferences().BoolWithFallback(SpeakAIResponseKey, false)
+	if speakResponse {
+		// TODO: the audio files need to be cleaned up periodically.
+		speech = &htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+		dirInfo, _ := dirsize.GetDirInfo(os.DirFS("audio"))
+		slog.Info("AI Speech Recordings", "fileCount", dirInfo.FileCount, "size", bytesize.New(float64(dirInfo.TotalSize)))
+		_ = speech.Speak("")
 	}
 }

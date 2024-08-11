@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/x/fyne/theme"
 	ollamaApi "github.com/ollama/ollama/api"
+	hook "github.com/robotn/gohook"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
@@ -29,13 +30,14 @@ var (
 	translationToBinding   = binding.NewString()
 	selectedPromptBinding  = binding.NewString()
 	guiApp                 fyne.App
+	systemHook             chan hook.Event
 	ollamaPID              int
 	stopOllamaOnShutDown   = false
 )
 
 func main() {
 	slog.Info("Starting Ctr+Revise gui Service...", "Version", version.Version, "Compiler", runtime.Version())
-	guiApp = app.NewWithID("com.bahelit.ctrl_plus_revise")
+	guiApp = app.NewWithID("com.ctrlplusrevise.app")
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
 
 	// Prepare the loading screen and system tray
@@ -64,7 +66,11 @@ func main() {
 	sayHello()
 
 	// Listen for global hotkeys
-	go RegisterHotkeys()
+	setKeyboardShortcuts()
+	go func() {
+		startKeyboardListener()
+	}()
+	initSpeech()
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)

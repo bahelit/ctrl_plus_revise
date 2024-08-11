@@ -1,4 +1,4 @@
-app-id: com.bahelit.ctrl_plus_revise
+app-id: com.ctrlplusrevise.app
 runtime: org.freedesktop.Platform
 runtime-version: '23.08'
 sdk: org.freedesktop.Sdk
@@ -26,34 +26,32 @@ finish-args:
   - --filesystem=host-os:ro
 
 modules:
-  - name: ollama
-    buildsystem: simple
-    build-commands:
-      - install -Dm0755 ollama* /app/bin/ollama
-    sources:
-      - type: file
-        url: "https://github.com/ollama/ollama/releases/download/v0.3.3/ollama-linux-amd64"
-        sha256: 2b2a4ee4c86fa5b09503e95616bd1b3ee95238b1b3bf12488b9c27c66b84061a
-        only-arches: [ x86_64 ]
-  - name: setup
-    buildsystem: simple
-    build-commands:
-      - install -Dm00644 icon.png /app/share/icons/hicolor/256x256/apps/$FLATPAK_ID.png
-      - install -Dm00644 $FLATPAK_ID.desktop $FLATPAK_DEST/share/applications/$FLATPAK_ID.desktop
-    sources:
-      - type: dir
-        path: "flatpak/"
+#  - name: ollama
+#    buildsystem: simple
+#    build-commands:
+#      - install -Dm0755 ollama* /app/bin/ollama
+#    sources:
+#      - type: file
+#        url: "https://github.com/ollama/ollama/releases/download/v0.3.3/ollama-linux-amd64"
+#        sha256: 2b2a4ee4c86fa5b09503e95616bd1b3ee95238b1b3bf12488b9c27c66b84061a
+#        only-arches: [ x86_64 ]
+#  - name: setup
+#    buildsystem: simple
+#    build-commands:
+#      - install -Dm00644 icon.png /app/share/icons/hicolor/256x256/apps/$FLATPAK_ID.png
+#      - install -Dm00644 $FLATPAK_ID.desktop $FLATPAK_DEST/share/applications/$FLATPAK_ID.desktop
+#    sources:
+#      - type: dir
+#        path: "flatpak/"
   - name: ctrl_plus_revise
     buildsystem: simple
     build-commands:
       - install -Dm00755 ctrl_plus_revise-linux-amd64 /app/bin/ctrl_plus_revise
     sources:
       - type: file
-        path: "bin/ctrl_plus_revise-linux-amd64"
-#        url: '.'
+        url: "https://github.com/bahelit/ctrl_plus_revise/releases/download/v0.0.7/ctrl_plus_revise-linux-amd64"
+        sha256: 131e2122aea1e4a6eefc8e3cbe5092a0a8e4cfca46a5863487116a6e18ecfaa8
         only-arches: [ x86_64 ]
-#        url: "https://github.com/bahelit/ctrl_plus_revise" # TODO make binaries available in git, link them here
-#        sha256: n/a # Update by running sha256sum on the file linked in the url.
 #  - name: flatpack_run.sh
 #    buildsystem: simple
 #    build-commands:
