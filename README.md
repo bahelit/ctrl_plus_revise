@@ -154,8 +154,8 @@ Contributions are welcome and will be fully credited.
 
 ## TODO
 * [X] Bring back pop-up dialog on keyboard shortcut as an option
-* [ ] Windows - Fix model download notification spamming.
-* [ ] UI Improvement - show the model download progress percentage
+* [X] Windows - Fix model download notification spamming.
+* [X] UI Improvement - show the model download progress percentage
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package

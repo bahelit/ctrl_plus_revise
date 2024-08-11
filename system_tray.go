@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/layout"
 	"github.com/ollama/ollama/api"
+	"log/slog"
+	"os"
+	"time"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
@@ -476,27 +476,41 @@ func selectAIModelDropDown() *widget.Select {
 }
 
 func PullModelWrapper(model ollama.ModelName, update bool) error {
-	pulling := gui.LoadingScreenWithMessage(guiApp, "Downloading Model", "fetching model: "+model.String())
+	completed := binding.NewFloat()
+	status := binding.NewString()
+	loading := widget.NewProgressBarWithData(completed)
+
+	progressFunc := func(resp api.ProgressResponse) error {
+		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
+		err := status.Set(resp.Status)
+		if err != nil {
+			slog.Error("Failed to set status", "error", err)
+		}
+		loading.Max = float64(resp.Total)
+		loading.Min = 0.0
+		err = completed.Set(float64(resp.Completed))
+		if err != nil {
+			slog.Error("Failed to set progress", "error", err)
+		}
+		if resp.Total == resp.Completed {
+			slog.Info("Model pulled", "model", model, "resp", resp)
+		}
+		return nil
+	}
+
+	pulling := gui.LoadingScreenWithProgressAndMessage(guiApp, loading, status, "Downloading Model", "Retrieving model: "+model.String())
 	pulling.Show()
 	defer func() {
 		time.Sleep(500 * time.Millisecond)
 		pulling.Hide()
 	}()
 
-	progressFunc := func(resp api.ProgressResponse) error {
-		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
-		if resp.Total == resp.Completed {
-			slog.Info("Model pulled", "model", model, "resp", resp)
-		}
-		gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
-		return nil
-	}
-
 	err := ollama.PullModel(ollamaClient, model, progressFunc, update)
 	if err != nil {
 		slog.Error("Failed to pull model", "error", err)
 		return err
 	}
+	gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
 	return nil
 }
 

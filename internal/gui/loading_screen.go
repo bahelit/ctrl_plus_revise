@@ -3,6 +3,7 @@ package gui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -26,5 +27,14 @@ func LoadingScreenWithMessage(guiApp fyne.App, title, msg string) fyne.Window {
 	infinite := widget.NewProgressBarInfinite()
 	text := widget.NewLabel(msg)
 	loadingScreen.SetContent(container.NewVBox(text, infinite))
+	return loadingScreen
+}
+func LoadingScreenWithProgressAndMessage(guiApp fyne.App, loading *widget.ProgressBar, status binding.String, title, msg string) fyne.Window {
+	loadingScreen := guiApp.NewWindow(title)
+	loadingScreen.Resize(fyne.NewSize(300, 80))
+	text := widget.NewLabel(msg)
+	s := widget.NewLabelWithData(status)
+	layout := container.NewGridWithColumns(1, text, s, loading)
+	loadingScreen.SetContent(layout)
 	return loadingScreen
 }
