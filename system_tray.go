@@ -479,6 +479,7 @@ func PullModelWrapper(model ollama.ModelName, update bool) error {
 	completed := binding.NewFloat()
 	status := binding.NewString()
 	loading := widget.NewProgressBarWithData(completed)
+	startTime := time.Now()
 
 	progressFunc := func(resp api.ProgressResponse) error {
 		slog.Info("Progress", "status", resp.Status, "total", resp.Total, "completed", resp.Completed)
@@ -510,7 +511,10 @@ func PullModelWrapper(model ollama.ModelName, update bool) error {
 		slog.Error("Failed to pull model", "error", err)
 		return err
 	}
-	gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
+	elapsed := time.Since(startTime)
+	if elapsed > 3*time.Second {
+		gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
+	}
 	return nil
 }
 
