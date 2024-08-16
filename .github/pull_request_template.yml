@@ -1,0 +1,47 @@
+name: Pull Request
+description: Create a pull request to propose changes
+title: "[PR] "
+labels: ''
+assignees: ''
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Description**
+        A clear and concise description of what this pull request does.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what this pull request does.
+  - type: input
+    id: related_issue
+    attributes:
+      label: Related Issue
+      description: Link to the issue that this pull request addresses.
+  - type: checkboxes
+    id: type_of_change
+    attributes:
+      label: Type of Change
+      options:
+        - label: Bug fix
+        - label: New feature
+        - label: Breaking change
+        - label: Documentation update
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: My code follows the style guidelines of this project
+        - label: I have performed a self-review of my own code
+        - label: I have made corresponding changes to the documentation
+        - label: My changes generate no new warnings
+        - label: I have added tests that prove my fix is effective or that my feature works
+        - label: New and existing unit tests pass locally with my changes
+        - label: Any dependent changes have been merged and published in downstream modules
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the pull request here.
