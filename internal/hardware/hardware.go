@@ -53,7 +53,6 @@ func DetectProcessingDevice() GPU {
 		if card != nil && card.DeviceInfo != nil {
 			slog.Info("GPU Probe", "Driver", card.DeviceInfo.Driver, "Product", card.DeviceInfo.Product.Name)
 		} else {
-			slog.Warn("Failed to get GPU info")
 			continue
 		}
 		if card.DeviceInfo.Driver == amdDriver {
