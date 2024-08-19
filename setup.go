@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -51,7 +50,7 @@ func fetchModel() {
 
 func handleShutdown(p int) {
 	stopOllamaOnShutDown = guiApp.Preferences().BoolWithFallback(StopOllamaOnShutDownKey, true)
-	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, true)
+	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
 	if stopOllamaOnShutDown {
 		if useDocker {
 			docker.StopOllamaContainer()
@@ -64,24 +63,9 @@ func handleShutdown(p int) {
 }
 
 func setupServices() bool {
-	connectedToOllama := false
-	var err error
-
-	heartBeatCtx, heartBeatCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer heartBeatCancel()
-	// Start communication with the AI
-	ollamaClient = ollama.ConnectToOllama()
-	err = ollamaClient.Heartbeat(heartBeatCtx)
-	if err == nil {
-		slog.Info("Connected to Ollama")
-		connectedToOllama = true
+	connectedToOllama := checkOllamaConnection(nil)
+	if connectedToOllama {
 		return connectedToOllama
-	} else {
-		slog.Error("Ollama doesn't appear to be running", "error", err)
-		heartBeatCancel()
-	}
-	if <-heartBeatCtx.Done(); true {
-		slog.Error("Ollama heartbeat timed out")
 	}
 
 	// Ollama isn't running, should we start it with Docker?
@@ -125,22 +109,24 @@ func setKeyboardShortcuts() {
 }
 
 func startOllama() (connectedToOllama bool) {
-	versionCMD := exec.Command("ollama", "--version")
-	err := versionCMD.Run()
+	_, err := exec.LookPath("ollama")
 	if err != nil {
-		slog.Error("Can't find Ollama", "error", err)
-		return connectedToOllama
+		slog.Info("Ollama not found", "error", err)
+		ollama.InstallOrUpdateOllama()
 	}
+
 	ollamaServe := exec.Command("ollama", "serve")
 	err = ollamaServe.Start()
 	if err != nil {
 		return connectedToOllama
 	}
-	err = ollamaServe.Wait()
-	if err != nil {
-		slog.Error("Ollama process exited", "error", err)
-		return connectedToOllama
-	}
+	time.Sleep(1 * time.Second)
+	go func() {
+		err = ollamaServe.Wait()
+		if err != nil {
+			slog.Error("Ollama process exited", "error", err)
+		}
+	}()
 
 	ollamaPID = ollamaServe.Process.Pid
 	slog.Info("Started Ollama", "pid", ollamaPID)

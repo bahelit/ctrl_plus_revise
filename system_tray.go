@@ -12,6 +12,7 @@ import (
 	"github.com/ollama/ollama/api"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
@@ -31,6 +32,8 @@ const (
 	CurrentFromLangKey         = "fromLang"
 	CurrentToLangKey           = "toLang"
 	StopOllamaOnShutDownKey    = "stopOllamaOnShutDown"
+	UseRemoteOllamaKey         = "useRemoteOllama"
+	OllamaURLKey               = "OllamaURL"
 	UseDockerKey               = "useDocker"
 	AskAIKeyboardShortcut      = "AskAIKeyboardShortcut"
 	CtrlReviseKeyboardShortcut = "CtrlReviseKeyboardShortcut"
@@ -59,14 +62,14 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 			fyne.NewMenuItem("Ask a Question", func() {
 				askQuestion(guiApp)
 			}),
+			fyne.NewMenuItem("Translate Window", func() {
+				translateText(guiApp)
+			}),
 			fyne.NewMenuItem("Keyboard Shortcuts", func() {
 				showShortcuts(guiApp)
 			}),
 			fyne.NewMenuItem("Settings Window", func() {
 				sysTray.Show()
-			}),
-			fyne.NewMenuItem("Translate Window", func() {
-				translateText(guiApp)
 			}),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() {
@@ -111,11 +114,11 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 		}
 	}
 
-	hideWindowButton := widget.NewButton("Hide This Window", func() {
-		sysTray.Hide()
-	})
 	keyboardShortcutsButton := widget.NewButton("Configure Keyboard Shortcuts", func() {
 		showShortcuts(guiApp)
+	})
+	configureOllama := widget.NewButton("Configure Ollama", func() {
+		installOrUpdateOllamaWindow(guiApp)
 	})
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
 		askQuestion(guiApp)
@@ -136,7 +139,7 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 		welcomeText,
 		askQuestionsButton,
 		translatorButton,
-		hideWindowButton,
+		configureOllama,
 		keyboardShortcutsButton,
 		checkboxLayout)
 
@@ -195,7 +198,17 @@ func mainWindowText() *fyne.Container {
 	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
-	shortcutText := widget.NewLabel("Pressing \"Alt + C\" will send the highlighted text to an AI\nthe response is put into the clipboard")
+
+	ctrlReviseKeys := getCtrlReviseKeys()
+	var ctrlReviseString string
+	keyLength := len(ctrlReviseKeys)
+	for key, value := range ctrlReviseKeys {
+		ctrlReviseString += strings.ToUpper(value)
+		if key != keyLength-1 {
+			ctrlReviseString += " + "
+		}
+	}
+	shortcutText := widget.NewLabel("Pressing \"" + ctrlReviseString + "\" will send the highlighted text to an AI\nthe response is put into the clipboard")
 	shortcutText.Alignment = fyne.TextAlignCenter
 	shortcutText.TextStyle = fyne.TextStyle{Bold: true}
 	closeMeText := widget.NewLabel("This window can be closed, the program will keep running in the taskbar")
@@ -502,7 +515,7 @@ func PullModelWrapper(model ollama.ModelName, update bool) error {
 	pulling := gui.LoadingScreenWithProgressAndMessage(guiApp, loading, status, "Downloading Model", "Retrieving model: "+model.String())
 	pulling.Show()
 	defer func() {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		pulling.Hide()
 	}()
 
@@ -514,6 +527,9 @@ func PullModelWrapper(model ollama.ModelName, update bool) error {
 	elapsed := time.Since(startTime)
 	if elapsed > 3*time.Second {
 		gui.ShowNotification(guiApp, "Model Download Completed", "Model "+model.String()+" has been pulled")
+		slog.Info("Model Download Completed", "model", model)
+	} else {
+		slog.Info("Already have the latest model", "model", model)
 	}
 	return nil
 }

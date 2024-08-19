@@ -57,7 +57,8 @@ func main() {
 	go func() {
 		connectedToOllama := setupServices()
 		if !connectedToOllama {
-			os.Exit(1)
+			slog.Error("Failed to connect to Ollama")
+			installOrUpdateOllamaWindow(guiApp)
 		}
 		fetchModel()
 		time.Sleep(1 * time.Second)

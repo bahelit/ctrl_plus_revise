@@ -44,7 +44,6 @@ const (
 )
 
 //nolint:gocyclo // This function is not too complex
-//nolint:funlen // This function is not too long
 func keyboardModifierButtonsDropDown(action KeyAction, key KeyType) *widget.Select {
 	modKeys := modifierKeys()
 	if key == ModifierKey2 {

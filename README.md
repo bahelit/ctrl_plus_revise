@@ -52,8 +52,20 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 
 Ollama is a tool for interacting with various Large-Language-Models. It is used to interact with the AI models.
 
-You can download the latest release from the [Ollama.com](https://ollama.com/download) website.
+Ctrl+Revise download and install the latest release Ollama with the click of a button.
 
+You can manually download the latest release from the [Ollama.com](https://ollama.com/download) website.
+
+##### Windows
+Windows users can install [Ollama.com](https://ollama.com/download) from the official website.
+
+##### MacOS
+MacOS users can install Ollama from Homebrew.
+```bash
+brew install ollama
+```
+
+##### Arch Linux
 Arch Linux users can install Ollama from the official repository.
 
 | CPU                     | AMD GPU                      | Nvidia GPU                     |
