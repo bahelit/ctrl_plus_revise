@@ -45,43 +45,48 @@ var (
 	aiModelDropdown  *widget.Select
 )
 
-//nolint:funlen // This function is long because it sets up the system tray
+const (
+	AppTitle      = "Ctrl+Revise AI Text Generator"
+	GreetingsText = "Welcome to Ctrl+Revise!"
+	TrayMenuTitle = "Ctrl+Revise"
+)
+
+// SetupSysTray initializes the system tray for the application
 func SetupSysTray(guiApp fyne.App) fyne.Window {
-	err := setBindingVariables()
-	if err != nil {
+	if err := setBindingVariables(); err != nil {
 		slog.Error("Failed to set binding variables", "error", err)
 		os.Exit(1)
 	}
 
-	sysTray := guiApp.NewWindow("Ctrl+Revise AI Text Generator")
-	sysTray.SetTitle("Ctrl+Revise AI Text Generator")
+	sysTray := guiApp.NewWindow(AppTitle)
+	sysTray.SetTitle(AppTitle)
 
-	// System tray menu
+	setupTrayMenu(guiApp, sysTray)
+	setupTrayWindowContent(guiApp, sysTray)
+
+	sysTray.SetCloseIntercept(func() {
+		sysTray.Hide()
+	})
+	return sysTray
+}
+
+// setupTrayMenu sets up the system tray menu
+func setupTrayMenu(guiApp fyne.App, sysTray fyne.Window) {
 	if desk, ok := guiApp.(desktop.App); ok {
-		m := fyne.NewMenu("Ctrl+Revise",
-			fyne.NewMenuItem("Ask a Question", func() {
-				askQuestion(guiApp)
-			}),
-			fyne.NewMenuItem("Translate Window", func() {
-				translateText(guiApp)
-			}),
-			fyne.NewMenuItem("Keyboard Shortcuts", func() {
-				showShortcuts(guiApp)
-			}),
-			fyne.NewMenuItem("Settings Window", func() {
-				sysTray.Show()
-			}),
+		desk.SetSystemTrayMenu(fyne.NewMenu(TrayMenuTitle,
+			fyne.NewMenuItem("Ask a Question", func() { askQuestion(guiApp) }),
+			fyne.NewMenuItem("Translate Window", func() { translateText(guiApp) }),
+			fyne.NewMenuItem("Keyboard Shortcuts", func() { showShortcuts(guiApp) }),
+			fyne.NewMenuItem("Settings Window", func() { sysTray.Show() }),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("About", func() {
-				showAbout(guiApp)
-			}),
-		)
-		desk.SetSystemTrayMenu(m)
+			fyne.NewMenuItem("About", func() { showAbout(guiApp) }),
+		))
 	}
+}
 
-	// System tray window content
+// setupTrayWindowContent sets up the content of the system tray window
+func setupTrayWindowContent(guiApp fyne.App, sysTray fyne.Window) {
 	welcomeText := mainWindowText()
-
 	startUpCheckBox := showOnStartUpCheckBox(guiApp)
 	stopOllamaOnShutdownCheckbox := stopOllamaOnShutdownCheckBox(guiApp)
 	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
@@ -141,40 +146,33 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 		translatorButton,
 		configureOllama,
 		keyboardShortcutsButton,
-		checkboxLayout)
-
+		checkboxLayout,
+	)
 	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
 	chooseActionLabel.Alignment = fyne.TextAlignTrailing
 	aiActionDropdown = selectCopyActionDropDown()
-
 	chooseModelLabel := widget.NewLabel("Choose which AI should respond to the highlighted text:")
 	chooseModelLabel.Alignment = fyne.TextAlignTrailing
 	aiModelDropdown = selectAIModelDropDown()
-
 	chooseLanguageLabel := widget.NewLabel("Choose the languages for translation")
 	chooseLanguageLabel.Alignment = fyne.TextAlignTrailing
 	fromLangDropdown := selectTranslationFromDropDown()
 	toLangDropdown := selectTranslationToDropDown()
-
 	langDivider := container.NewHBox(
 		widget.NewLabel("From: "),
 		fromLangDropdown,
 		widget.NewLabel("To: "),
-		toLangDropdown)
-
+		toLangDropdown,
+	)
 	dropDownMenu := container.NewAdaptiveGrid(2,
 		chooseActionLabel,
 		aiActionDropdown,
 		chooseModelLabel,
 		aiModelDropdown,
 		chooseLanguageLabel,
-		langDivider)
+		langDivider,
+	)
 	sysTray.SetContent(container.NewBorder(mainWindow, dropDownMenu, nil, nil))
-
-	sysTray.SetCloseIntercept(func() {
-		sysTray.Hide()
-	})
-	return sysTray
 }
 
 func LoadIcon(guiApp fyne.App) {
@@ -195,7 +193,7 @@ func LoadIcon(guiApp fyne.App) {
 }
 
 func mainWindowText() *fyne.Container {
-	welcomeText := widget.NewLabel("Welcome to Ctrl+Revise!")
+	welcomeText := widget.NewLabel(GreetingsText)
 	welcomeText.Alignment = fyne.TextAlignCenter
 	welcomeText.TextStyle = fyne.TextStyle{Bold: true}
 

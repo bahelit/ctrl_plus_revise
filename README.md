@@ -42,7 +42,7 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 
 ## Getting Started
 
-#### System Requirements:
+### System Requirements:
 
 - 8GB of RAM (GPU) or 16GB of RAM (CPU)
 
