@@ -49,7 +49,7 @@ func main() {
 		sysTray.Show()
 		startupWindow.Show()
 	}
-	LoadIcon(guiApp)
+	loadIcon(guiApp)
 
 	// Start the services
 	hardware.DetectProcessingDevice()

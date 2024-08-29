@@ -42,7 +42,7 @@ func questionPopUp(a fyne.App, question string, response *ollamaApi.GenerateResp
 
 	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 
-	buttons := container.NewPadded(container.NewVBox(
+	buttons := container.NewHBox(
 		widget.NewButton("Try Again", func() {
 			loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 				"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
@@ -103,7 +103,8 @@ func questionPopUp(a fyne.App, question string, response *ollamaApi.GenerateResp
 			w.Clipboard().SetContent(response.Response)
 			w.Close()
 		}),
-	))
+	)
+	buttons.Layout = layout.NewAdaptiveGridLayout(3)
 
 	grid := container.New(layout.NewAdaptiveGridLayout(1), vbox)
 

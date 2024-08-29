@@ -2,18 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
+	layoutv1 "fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/layout"
 	"github.com/ollama/ollama/api"
-	"log/slog"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
@@ -38,6 +41,17 @@ const (
 	AskAIKeyboardShortcut      = "AskAIKeyboardShortcut"
 	CtrlReviseKeyboardShortcut = "CtrlReviseKeyboardShortcut"
 	TranslateKeyboardShortcut  = "TranslateKeyboardShortcut"
+
+	ConsumersKey = "ConsumersCook"
+	MealKey      = "MealToCook"
+	FlavorKey    = "MealFlavor"
+	CookwareKey  = "MealCookware"
+	DairyKey     = "MealDairy"
+	FreezerKey   = "MealFreezer"
+	HerbsKey     = "MealHerbs"
+	PantryKey    = "MealPantry"
+	VeggiesKey   = "MealVeggies"
+	ProteinKey   = "MealProtein"
 )
 
 var (
@@ -61,6 +75,8 @@ func SetupSysTray(guiApp fyne.App) fyne.Window {
 	sysTray := guiApp.NewWindow(AppTitle)
 	sysTray.SetTitle(AppTitle)
 
+	sysTray.SetMainMenu(makeMenu(guiApp, sysTray))
+
 	setupTrayMenu(guiApp, sysTray)
 	setupTrayWindowContent(guiApp, sysTray)
 
@@ -75,9 +91,12 @@ func setupTrayMenu(guiApp fyne.App, sysTray fyne.Window) {
 	if desk, ok := guiApp.(desktop.App); ok {
 		desk.SetSystemTrayMenu(fyne.NewMenu(TrayMenuTitle,
 			fyne.NewMenuItem("Ask a Question", func() { askQuestion(guiApp) }),
-			fyne.NewMenuItem("Translate Window", func() { translateText(guiApp) }),
 			fyne.NewMenuItem("Keyboard Shortcuts", func() { showShortcuts(guiApp) }),
-			fyne.NewMenuItem("Settings Window", func() { sysTray.Show() }),
+			fyne.NewMenuItem("Meal Planner", func() { mealPlanner(guiApp) }),
+			fyne.NewMenuItem("Translate Window", func() { translateText(guiApp) }),
+			fyne.NewMenuItem("Home Screen", func() { sysTray.Show() }),
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem("Settings", func() { showSetting(guiApp) }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() { showAbout(guiApp) }),
 		))
@@ -87,95 +106,50 @@ func setupTrayMenu(guiApp fyne.App, sysTray fyne.Window) {
 // setupTrayWindowContent sets up the content of the system tray window
 func setupTrayWindowContent(guiApp fyne.App, sysTray fyne.Window) {
 	welcomeText := mainWindowText()
-	startUpCheckBox := showOnStartUpCheckBox(guiApp)
-	stopOllamaOnShutdownCheckbox := stopOllamaOnShutdownCheckBox(guiApp)
-	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
-	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
-	useDockerTextCheckBox := useDockerCheckBox(guiApp)
-	showPopUpCheckBox := showPopUpCheckbox(guiApp)
 
-	replaceHighlightedTextCheckBox.OnChanged = func(b bool) {
-		if b {
-			guiApp.Preferences().SetBool(ReplaceHighlightedText, true)
-			guiApp.Preferences().SetBool(ShowPopUpKey, false)
-			showPopUpCheckBox.Checked = false
-			showPopUpCheckBox.Refresh()
-			slog.Debug("Replace highlighted text is on")
-		} else {
-			slog.Debug("Replace highlighted text is off")
-			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
-		}
-	}
-	showPopUpCheckBox.OnChanged = func(b bool) {
-		if b {
-			guiApp.Preferences().SetBool(ShowPopUpKey, true)
-			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
-			replaceHighlightedTextCheckBox.Checked = false
-			replaceHighlightedTextCheckBox.Refresh()
-			slog.Debug("Show Pop-Up is on")
-		} else {
-			slog.Debug("Show Pop-Up is off")
-			guiApp.Preferences().SetBool(ShowPopUpKey, false)
-		}
-	}
-
-	keyboardShortcutsButton := widget.NewButton("Configure Keyboard Shortcuts", func() {
-		showShortcuts(guiApp)
-	})
-	configureOllama := widget.NewButton("Configure Ollama", func() {
-		installOrUpdateOllamaWindow(guiApp)
-	})
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
 		askQuestion(guiApp)
+	})
+	recipeButton := widget.NewButton("Meal Planner", func() {
+		mealPlanner(guiApp)
 	})
 	translatorButton := widget.NewButton("Translate Text", func() {
 		translateText(guiApp)
 	})
 
-	checkboxLayout := container.NewAdaptiveGrid(2,
-		layout.Responsive(speakAIResponseTextCheckBox),
-		layout.Responsive(replaceHighlightedTextCheckBox),
-		layout.Responsive(useDockerTextCheckBox),
-		layout.Responsive(showPopUpCheckBox),
-		layout.Responsive(startUpCheckBox),
-		layout.Responsive(stopOllamaOnShutdownCheckbox))
-
-	mainWindow := container.NewVBox(
-		welcomeText,
+	buttons := container.NewVBox(
 		askQuestionsButton,
+		recipeButton,
 		translatorButton,
-		configureOllama,
-		keyboardShortcutsButton,
-		checkboxLayout,
 	)
-	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
-	chooseActionLabel.Alignment = fyne.TextAlignTrailing
-	aiActionDropdown = selectCopyActionDropDown()
-	chooseModelLabel := widget.NewLabel("Choose which AI should respond to the highlighted text:")
-	chooseModelLabel.Alignment = fyne.TextAlignTrailing
-	aiModelDropdown = selectAIModelDropDown()
-	chooseLanguageLabel := widget.NewLabel("Choose the languages for translation")
-	chooseLanguageLabel.Alignment = fyne.TextAlignTrailing
-	fromLangDropdown := selectTranslationFromDropDown()
-	toLangDropdown := selectTranslationToDropDown()
-	langDivider := container.NewHBox(
-		widget.NewLabel("From: "),
-		fromLangDropdown,
-		widget.NewLabel("To: "),
-		toLangDropdown,
-	)
-	dropDownMenu := container.NewAdaptiveGrid(2,
-		chooseActionLabel,
-		aiActionDropdown,
-		chooseModelLabel,
-		aiModelDropdown,
-		chooseLanguageLabel,
-		langDivider,
-	)
-	sysTray.SetContent(container.NewBorder(mainWindow, dropDownMenu, nil, nil))
+	footer := footer()
+	sysTray.SetContent(container.NewBorder(welcomeText, footer, nil, nil, buttons))
 }
 
-func LoadIcon(guiApp fyne.App) {
+func footer() *fyne.Container {
+	footer := container.NewHBox(
+		layoutv1.NewSpacer(),
+		widget.NewHyperlink("Ctrl+Revise", parseURL("https://ctrlplusrevise.com")),
+		widget.NewLabel("-"),
+		widget.NewHyperlink("Documentation", parseURL("https://ctrlplusrevise.com/docs/tutorials/")),
+		widget.NewLabel("-"),
+		widget.NewHyperlink("Sponsor", parseURL("https://www.patreon.com/SalmonsStudios")),
+		layoutv1.NewSpacer(),
+	)
+	return footer
+}
+
+func parseURL(urlStr string) *url.URL {
+	link, err := url.Parse(urlStr)
+	if err != nil {
+		fyne.LogError("Could not parse URL", err)
+	}
+
+	return link
+}
+
+// TODO: Embed icon in binary
+func loadIcon(guiApp fyne.App) {
 	var (
 		icon         fyne.Resource
 		errLocation1 error
@@ -568,6 +542,92 @@ func UpdateDropDownMenus() {
 	aiModelDropdown.SetSelected(selectedModel.String())
 }
 
+func showSetting(guiApp fyne.App) {
+	slog.Debug("Showing settings")
+	settingsWindow := guiApp.NewWindow("Ctrl+Revise Settings")
+
+	startUpCheckBox := showOnStartUpCheckBox(guiApp)
+	stopOllamaOnShutdownCheckbox := stopOllamaOnShutdownCheckBox(guiApp)
+	replaceHighlightedTextCheckBox := replaceHighlightedCheckbox(guiApp)
+	speakAIResponseTextCheckBox := speakAIResponseCheckbox(guiApp)
+	useDockerTextCheckBox := useDockerCheckBox(guiApp)
+	showPopUpCheckBox := showPopUpCheckbox(guiApp)
+
+	replaceHighlightedTextCheckBox.OnChanged = func(b bool) {
+		if b {
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, true)
+			guiApp.Preferences().SetBool(ShowPopUpKey, false)
+			showPopUpCheckBox.Checked = false
+			showPopUpCheckBox.Refresh()
+			slog.Debug("Replace highlighted text is on")
+		} else {
+			slog.Debug("Replace highlighted text is off")
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
+		}
+	}
+	showPopUpCheckBox.OnChanged = func(b bool) {
+		if b {
+			guiApp.Preferences().SetBool(ShowPopUpKey, true)
+			guiApp.Preferences().SetBool(ReplaceHighlightedText, false)
+			replaceHighlightedTextCheckBox.Checked = false
+			replaceHighlightedTextCheckBox.Refresh()
+			slog.Debug("Show Pop-Up is on")
+		} else {
+			slog.Debug("Show Pop-Up is off")
+			guiApp.Preferences().SetBool(ShowPopUpKey, false)
+		}
+	}
+
+	checkboxLayout := container.NewAdaptiveGrid(2,
+		layout.Responsive(speakAIResponseTextCheckBox),
+		layout.Responsive(replaceHighlightedTextCheckBox),
+		layout.Responsive(useDockerTextCheckBox),
+		layout.Responsive(showPopUpCheckBox),
+		layout.Responsive(startUpCheckBox),
+		layout.Responsive(stopOllamaOnShutdownCheckbox),
+	)
+
+	keyboardShortcutsButton := widget.NewButton("Configure Keyboard Shortcuts", func() {
+		showShortcuts(guiApp)
+	})
+	configureOllama := widget.NewButton("Configure Ollama", func() {
+		installOrUpdateOllamaWindow(guiApp)
+	})
+
+	buttons := container.NewVBox(
+		keyboardShortcutsButton,
+		configureOllama,
+	)
+
+	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
+	chooseActionLabel.Alignment = fyne.TextAlignTrailing
+	aiActionDropdown = selectCopyActionDropDown()
+	chooseModelLabel := widget.NewLabel("Choose which AI should respond to the highlighted text:")
+	chooseModelLabel.Alignment = fyne.TextAlignTrailing
+	aiModelDropdown = selectAIModelDropDown()
+	chooseLanguageLabel := widget.NewLabel("Choose the languages for translation")
+	chooseLanguageLabel.Alignment = fyne.TextAlignTrailing
+	fromLangDropdown := selectTranslationFromDropDown()
+	toLangDropdown := selectTranslationToDropDown()
+	langDivider := container.NewHBox(
+		widget.NewLabel("From: "),
+		fromLangDropdown,
+		widget.NewLabel("To: "),
+		toLangDropdown,
+	)
+	dropDownMenu := container.NewAdaptiveGrid(2,
+		chooseActionLabel,
+		aiActionDropdown,
+		chooseModelLabel,
+		aiModelDropdown,
+		chooseLanguageLabel,
+		langDivider,
+	)
+
+	settingsWindow.SetContent(container.NewBorder(buttons, dropDownMenu, nil, nil, checkboxLayout))
+	settingsWindow.Show()
+}
+
 func showAbout(guiApp fyne.App) {
 	slog.Debug("Showing about")
 	about := guiApp.NewWindow("About Ctrl+Revise!")
@@ -587,7 +647,7 @@ func showAbout(guiApp fyne.App) {
 	aboutTitle.Alignment = fyne.TextAlignCenter
 	aboutTitle.TextStyle = fyne.TextStyle{Bold: true}
 	aboutText := widget.NewLabel("Ctrl+Revise is here to help you unleash your inner wordsmith!\n" +
-		"This nifty tool uses clever local AI agents to generate text based on what you copy and paste.\n\n" +
+		"This nifty tool uses clever local AI agents to generate text based from any highlighted text.\n\n" +
 		"Need some professional flair? Got a friendly tone in mind?\nOr maybe you just want to make sure your writing is grammatically correct?\n" +
 		"Simply highlight the text you want to fix or ask about then press keyboard shortcut, and you're good to go!")
 
@@ -735,8 +795,7 @@ func askQuestion(guiApp fyne.App) {
 	})
 
 	topText := container.NewHBox(label1, label2)
-	questionLayout := layout.NewResponsiveLayout(
-		layout.Responsive(topText))
+	questionLayout := layout.NewResponsiveLayout(topText)
 	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
 	questionWindow := container.NewBorder(questionLayout, buttonLayout, nil, nil, text)
 	question.SetContent(container.NewVScroll(questionWindow))
@@ -776,4 +835,55 @@ func setBindingVariables() error {
 		slog.Error("Failed to set selectedPromptBinding", "error", err)
 	}
 	return err
+}
+
+func makeMenu(a fyne.App, w fyne.Window) *fyne.MainMenu {
+	openSettings := func() {
+		showSetting(guiApp)
+	}
+	showAbout := func() {
+		showAbout(guiApp)
+	}
+	aboutItem := fyne.NewMenuItem("About", showAbout)
+	settingsItem := fyne.NewMenuItem("Settings", openSettings)
+	settingsShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierShortcutDefault}
+	settingsItem.Shortcut = settingsShortcut
+	w.Canvas().AddShortcut(settingsShortcut, func(shortcut fyne.Shortcut) {
+		openSettings()
+	})
+
+	performFind := func() { fmt.Println("Menu Find") }
+	findItem := fyne.NewMenuItem("Find", performFind)
+	findItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: fyne.KeyModifierShortcutDefault | fyne.KeyModifierAlt | fyne.KeyModifierShift | fyne.KeyModifierControl | fyne.KeyModifierSuper}
+	w.Canvas().AddShortcut(findItem.Shortcut, func(shortcut fyne.Shortcut) {
+		performFind()
+	})
+
+	helpMenu := fyne.NewMenu("Help",
+		fyne.NewMenuItem("Documentation", func() {
+			u, _ := url.Parse("https://ctrlplusrevise.com/docs/tutorials/")
+			_ = a.OpenURL(u)
+		}),
+		fyne.NewMenuItem("Support", func() {
+			u, _ := url.Parse("https://discord.gg/TYBtGUdVBU")
+			_ = a.OpenURL(u)
+		}),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Sponsor", func() {
+			u, _ := url.Parse("https://www.patreon.com/SalmonsStudios")
+			_ = a.OpenURL(u)
+		}))
+
+	// a quit item will be appended to our first (File) menu
+	file := fyne.NewMenu("File")
+	device := fyne.CurrentDevice()
+	if !device.IsMobile() && !device.IsBrowser() {
+		file.Items = append(file.Items, fyne.NewMenuItemSeparator(), settingsItem)
+	}
+	file.Items = append(file.Items, aboutItem)
+	main := fyne.NewMainMenu(
+		file,
+		helpMenu,
+	)
+	return main
 }

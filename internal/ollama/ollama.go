@@ -178,7 +178,36 @@ func AskAiWithContext(client *api.Client, model ModelName, msgContext []int, pro
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
 		Model:  model.String(),
-		Prompt: prompt.PromptToText() + prompt.PromptExtraToText(),
+		Prompt: prompt.PromptToText() + " " + prompt.PromptExtraToText(),
+		// set streaming to false
+		Stream:  new(bool),
+		Context: msgContext,
+	}
+
+	// TODO implement timeout
+	ctx := context.Background()
+	respFunc := func(resp api.GenerateResponse) error {
+		// Only print the response here; GenerateResponse has a number of other
+		// interesting fields you want to examine.
+		response = resp
+		return nil
+	}
+
+	err := client.Generate(ctx, req, respFunc)
+	if err != nil {
+		slog.Error("Failed to generate", "error", err)
+		return api.GenerateResponse{}, err
+	}
+
+	return response, nil
+}
+
+func AskAiWithStringAndContext(client *api.Client, model ModelName, msgContext []int, prompt string) (api.GenerateResponse, error) {
+	// TODO How long does the context last?
+	var response api.GenerateResponse
+	req := &api.GenerateRequest{
+		Model:  model.String(),
+		Prompt: prompt,
 		// set streaming to false
 		Stream:  new(bool),
 		Context: msgContext,
