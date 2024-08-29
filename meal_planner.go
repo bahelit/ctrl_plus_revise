@@ -158,7 +158,7 @@ func mealPlanner(guiApp fyne.App) {
 		slog.Info("Recipe for single meal", "PROMPT", recipe)
 		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-			"Asking question with model: "+ollama.ModelName(model).String())
+			"Preparing recipe with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
 
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
@@ -169,7 +169,6 @@ func mealPlanner(guiApp fyne.App) {
 		}
 		loadingScreen.Hide()
 		recipePopUp(guiApp, recipe, &generated)
-		mealPlanner.Close()
 	})
 	suggest.Importance = widget.HighImportance
 	suggestPrep := widget.NewButton("Prep Multiple Meals", func() {
@@ -177,7 +176,7 @@ func mealPlanner(guiApp fyne.App) {
 		slog.Info("Meal prep plan", "PROMPT", recipe)
 		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-			"Asking question with model: "+ollama.ModelName(model).String())
+			"Creating meal prep with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
 
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
@@ -188,7 +187,6 @@ func mealPlanner(guiApp fyne.App) {
 		}
 		loadingScreen.Hide()
 		recipePopUp(guiApp, recipe, &generated)
-		mealPlanner.Close()
 	})
 	suggestPrep.Importance = widget.DangerImportance
 	groceryList := widget.NewButton("Create a Grocery List", func() {
@@ -196,7 +194,7 @@ func mealPlanner(guiApp fyne.App) {
 		slog.Info("Shopping plan", "PROMPT", recipe)
 		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-			"Asking question with model: "+ollama.ModelName(model).String())
+			"Creating grocery list with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
 
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
@@ -207,13 +205,11 @@ func mealPlanner(guiApp fyne.App) {
 		}
 		loadingScreen.Hide()
 		recipePopUp(guiApp, recipe, &generated)
-		mealPlanner.Close()
 	})
 	groceryList.Importance = widget.SuccessImportance
 	specialRequest := widget.NewButton("Put in a Special Request", func() {
-		slog.Info("preparing special request", "meal", meal.Selected, "cookWare", cookWare.Selected)
+		slog.Info("preparing special request")
 		createSpecialRequestPrompt()
-		mealPlanner.Close()
 	})
 	specialRequest.Importance = widget.MediumImportance
 
