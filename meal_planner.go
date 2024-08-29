@@ -155,6 +155,7 @@ func mealPlanner(guiApp fyne.App) {
 
 	suggest := widget.NewButton("Suggest a Single Meal", func() {
 		recipe := createMealPrompt(mealInfo)
+		slog.Info("Recipe for single meal", "PROMPT", recipe)
 		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 			"Asking question with model: "+ollama.ModelName(model).String())
@@ -168,23 +169,51 @@ func mealPlanner(guiApp fyne.App) {
 		}
 		loadingScreen.Hide()
 		recipePopUp(guiApp, recipe, &generated)
-		slog.Info("Recipe for single meal", "PROMPT", recipe)
 		mealPlanner.Close()
 	})
 	suggest.Importance = widget.HighImportance
 	suggestPrep := widget.NewButton("Prep Multiple Meals", func() {
-		slog.Info("preparing prep", "meal", meal.Selected, "cookWare", cookWare.Selected)
-		createMealPrepPrompt()
+		recipe := createMealPrepPrompt(mealInfo)
+		slog.Info("Meal prep plan", "PROMPT", recipe)
+		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
+		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+			"Asking question with model: "+ollama.ModelName(model).String())
+		loadingScreen.Show()
+
+		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+		recipePopUp(guiApp, recipe, &generated)
+		mealPlanner.Close()
 	})
 	suggestPrep.Importance = widget.DangerImportance
 	groceryList := widget.NewButton("Create a Grocery List", func() {
-		slog.Info("preparing grocery list", "meal", meal.Selected, "cookWare", cookWare.Selected)
-		createGroceryListPrompt()
+		recipe := createGroceryListPrompt(mealInfo)
+		slog.Info("Shopping plan", "PROMPT", recipe)
+		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
+		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+			"Asking question with model: "+ollama.ModelName(model).String())
+		loadingScreen.Show()
+
+		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+		recipePopUp(guiApp, recipe, &generated)
+		mealPlanner.Close()
 	})
 	groceryList.Importance = widget.SuccessImportance
 	specialRequest := widget.NewButton("Put in a Special Request", func() {
 		slog.Info("preparing special request", "meal", meal.Selected, "cookWare", cookWare.Selected)
 		createSpecialRequestPrompt()
+		mealPlanner.Close()
 	})
 	specialRequest.Importance = widget.MediumImportance
 

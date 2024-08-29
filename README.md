@@ -22,6 +22,7 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 - **Keyboard shortcuts**: Uses keyboard shortcuts to provide quick responses without switching focus away to another program.
 - **Local AI model**: Runs locally on your machine, ensuring your privacy and data security.
 - **Multiple AI models**: Supports multiple AI models to provide a variety of suggestions.
+- **Meal Planner**: Create recipes, meal prep plans, and grocer lists based on what you have with a simple GUI.
 - **Text Translation**: Supports translation to and from multiple languages.
 - **Grammar Correction**: Corrects grammar mistakes in the text.
 - **Change Tone**: Changes the tone of the text to be more formal or informal.
@@ -52,7 +53,7 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 
 Ollama is a tool for interacting with various Large-Language-Models. It is used to interact with the AI models.
 
-Ctrl+Revise download and install the latest release Ollama with the click of a button.
+Ctrl+Revise will download and install the latest release Ollama with the click of a button.
 
 You can manually download the latest release from the [Ollama.com](https://ollama.com/download) website.
 
