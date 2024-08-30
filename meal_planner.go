@@ -161,6 +161,8 @@ func mealPlanner(guiApp fyne.App) {
 			"Preparing recipe with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
 
+		recipe = addMarkdownFomatingToRecipe(recipe)
+
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
@@ -179,6 +181,8 @@ func mealPlanner(guiApp fyne.App) {
 			"Creating meal prep with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
 
+		recipe = addMarkdownFomatingToRecipe(recipe)
+
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
 		if err != nil {
 			slog.Error("Failed to ask AI", "error", err)
@@ -188,14 +192,16 @@ func mealPlanner(guiApp fyne.App) {
 		loadingScreen.Hide()
 		recipePopUp(guiApp, recipe, &generated)
 	})
-	suggestPrep.Importance = widget.DangerImportance
+	suggestPrep.Importance = widget.HighImportance
 	groceryList := widget.NewButton("Create a Grocery List", func() {
 		recipe := createGroceryListPrompt(mealInfo)
-		slog.Info("Shopping plan", "PROMPT", recipe)
+		slog.Info("Grocery List", "PROMPT", recipe)
 		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
 			"Creating grocery list with model: "+ollama.ModelName(model).String())
 		loadingScreen.Show()
+
+		recipe = addMarkdownFomatingToRecipe(recipe)
 
 		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
 		if err != nil {
@@ -207,13 +213,28 @@ func mealPlanner(guiApp fyne.App) {
 		recipePopUp(guiApp, recipe, &generated)
 	})
 	groceryList.Importance = widget.SuccessImportance
-	specialRequest := widget.NewButton("Put in a Special Request", func() {
-		slog.Info("preparing special request")
-		createSpecialRequestPrompt()
-	})
-	specialRequest.Importance = widget.MediumImportance
+	budgetFriendlyGroceryList := widget.NewButton("Create a Budget Friendly Grocery List", func() {
+		recipe := createBudgetFriendlyGroceryListPrompt(mealInfo)
+		slog.Info("Budget Friendly Shopping plan", "PROMPT", recipe)
+		model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
+		loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
+			"Creating grocery list with model: "+ollama.ModelName(model).String())
+		loadingScreen.Show()
 
-	action := container.NewHBox(suggest, groceryList, suggestPrep, specialRequest)
+		recipe = addMarkdownFomatingToRecipe(recipe)
+
+		generated, err := ollama.AskAI(ollamaClient, ollama.ModelName(model), recipe)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+		recipePopUp(guiApp, recipe, &generated)
+	})
+	budgetFriendlyGroceryList.Importance = widget.SuccessImportance
+
+	action := container.NewHBox(suggest, groceryList, suggestPrep, budgetFriendlyGroceryList)
 	action.Layout = layout.NewAdaptiveGridLayout(2)
 
 	boarderLayout := container.NewBorder(topText, action, nil, nil, tabs)
@@ -244,6 +265,10 @@ func shuffleStringArray(str []string) []string {
 			return rand.Int63()&1 == 0 && i < j
 		})
 	return str
+}
+
+func addMarkdownFomatingToRecipe(recipe string) string {
+	return recipe + ". " + "format: markdown"
 }
 
 func recipePopUp(a fyne.App, recipe string, response *ollamaApi.GenerateResponse) {

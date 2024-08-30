@@ -143,9 +143,9 @@ make stringer
 
 ## Screenshots
 
-|                   Main Menu                   |                      Keyboard Shortcuts                       |                     Translate Text                      |
-|:---------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------:|
-| ![Main Menu](images/Screenshot_Main_Menu.png) | ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png) | ![Translate Text](images/Screenshot_Translate_Tool.png) |
+|                   Main Menu                   |                      Keyboard Shortcuts                       |                    Meal Planner                     |
+|:---------------------------------------------:|:-------------------------------------------------------------:|:---------------------------------------------------:|
+| ![Main Menu](images/Screenshot_Main_Menu.png) | ![Shortcuts Window](images/Screenshot_Keyboard_Shortcuts.png) | ![Meal Planner](images/Screenshot_Meal_Planner.png) |
 
 ## Contributing
 
@@ -155,17 +155,17 @@ Contributions are welcome and will be fully credited.
 
 ## TODO
 * [X] Bring back pop-up dialog on keyboard shortcut as an option
-* [X] Windows - Fix model download notification spamming.
+* [X] Windows - Fix model download notification.
+* [X] Windows, prevent console window from opening
 * [X] UI Improvement - show the model download progress percentage
+* [X] UI Improvement - fix window resizing issues in Ask A Question window
+* [X] Docker - pull based on GPU type
+* [X] Custom keyboard shortcuts
+* [X] Settings menu for Ollama connection
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
 * [ ] Create Snap package
-* [ ] Settings menu for Ollama connection
-* [X] Docker - pull based on GPU type
-* [X] Custom keyboard shortcuts
-* [X] Windows, prevent console window from opening
-* [X] UI Improvement - fix window resizing issues in Ask A Question window
 * [ ] Improve Docker support - Check for new versions of Ollama and update
 * [ ] Improve model management - Ability to delete models
 * [ ] Image support (detect what is in the image using Llava or similar models)
