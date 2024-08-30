@@ -43,6 +43,8 @@ func mealPlanner(guiApp fyne.App) {
 
 	mealPlanner.SetMainMenu(makeMenu(guiApp, mealPlanner))
 
+	var mealInfo MealInfo
+
 	topText := widget.NewLabel("Putting an end to the age old question of \"what's for dinner?\"")
 	topText.Alignment = fyne.TextAlignCenter
 
@@ -51,6 +53,10 @@ func mealPlanner(guiApp fyne.App) {
 		guiApp.Preferences().SetString(MealKey, s)
 	})
 	meal.SetSelected(guiApp.Preferences().String(MealKey))
+	meal.OnChanged = func(s string) {
+		guiApp.Preferences().SetString(MealKey, s)
+		mealInfo.Meal = s
+	}
 
 	consumersValidated := newNumEntry()
 	consumersValidated.SetPlaceHolder("How many people are eating?")
@@ -70,6 +76,10 @@ func mealPlanner(guiApp fyne.App) {
 		guiApp.Preferences().SetString(FlavorKey, s)
 	})
 	flavor.SetSelected(guiApp.Preferences().String(FlavorKey))
+	flavor.OnChanged = func(s string) {
+		guiApp.Preferences().SetString(FlavorKey, s)
+		mealInfo.Theme = s
+	}
 	flavorCard := widget.NewCard("Flavor Profile", "What kind of style for our food?", flavor)
 
 	cookWare := widget.NewCheckGroup(getCookWares(), func(strings []string) {
@@ -139,19 +149,15 @@ func mealPlanner(guiApp fyne.App) {
 	tabs := container.NewAppTabs(mealTab, themeTab, cookwareTab, herbsTab, veggiesTab, dairyTab, pantryTab, proteinTab, freezerTab, allergyTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	mealInfo := MealInfo{
-		Consumers: consumersValidated.Text,
-		Meal:      meal.Selected,
-		Theme:     flavor.Selected,
-		Cookware:  shuffleStringArray(cookWare.Selected),
-		Dairy:     shuffleStringArray(dairyCheck.Selected),
-		Freezer:   shuffleStringArray(freezerCheck.Selected),
-		Herbs:     shuffleStringArray(herbsCheck.Selected),
-		Pantry:    shuffleStringArray(pantryCheck.Selected),
-		Veggies:   shuffleStringArray(veggieCheck.Selected),
-		Protein:   shuffleStringArray(proteinCheck.Selected),
-		Allergies: shuffleStringArray(allergyCheck.Selected),
-	}
+	mealInfo.Consumers = consumersValidated.Text
+	mealInfo.Cookware = shuffleStringArray(cookWare.Selected)
+	mealInfo.Dairy = shuffleStringArray(dairyCheck.Selected)
+	mealInfo.Freezer = shuffleStringArray(freezerCheck.Selected)
+	mealInfo.Herbs = shuffleStringArray(herbsCheck.Selected)
+	mealInfo.Pantry = shuffleStringArray(pantryCheck.Selected)
+	mealInfo.Veggies = shuffleStringArray(veggieCheck.Selected)
+	mealInfo.Protein = shuffleStringArray(proteinCheck.Selected)
+	mealInfo.Allergies = shuffleStringArray(allergyCheck.Selected)
 
 	suggest := widget.NewButton("Suggest a Single Meal", func() {
 		recipe := createMealPrompt(mealInfo)
