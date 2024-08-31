@@ -174,7 +174,7 @@ func installOllamaLinux() error {
 }
 
 func installOllamaMacOS() error {
-	brewCommand := "brew install ollama"
+	brewCommand := "brew install ollama && brew services start ollama"
 	cmd := exec.Command("bash", "-c", brewCommand)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

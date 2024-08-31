@@ -28,8 +28,9 @@ const (
 // TODO: Use to determine if we can run certain AI models
 func DetectMemory() {
 	ram, err := ghw.Memory()
-	if err != nil {
+	if err != nil || ram == nil {
 		slog.Info("Error getting Memory info", "error", err)
+		return
 	}
 
 	slog.Debug("Memory", "ram", ram.String())
@@ -41,13 +42,16 @@ func DetectMemory() {
 }
 
 func DetectProcessingDevice() GPU {
+	foundGPU := noGPU
 	gpu, err := ghw.GPU()
 	if err != nil {
 		slog.Info("Error getting GPU info", "error", err)
+		return foundGPU
 	}
 
-	foundGPU := noGPU
-
+	if gpu.GraphicsCards == nil {
+		return foundGPU
+	}
 	for _, card := range gpu.GraphicsCards {
 		// TODO: test on Nvidia system
 		if card != nil && card.DeviceInfo != nil {
