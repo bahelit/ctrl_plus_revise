@@ -91,12 +91,13 @@ func setupTrayMenu(guiApp fyne.App, sysTray fyne.Window) {
 	if desk, ok := guiApp.(desktop.App); ok {
 		desk.SetSystemTrayMenu(fyne.NewMenu(TrayMenuTitle,
 			fyne.NewMenuItem("Ask a Question", func() { askQuestion(guiApp) }),
-			fyne.NewMenuItem("Keyboard Shortcuts", func() { showShortcuts(guiApp) }),
 			fyne.NewMenuItem("Meal Planner", func() { mealPlanner(guiApp) }),
 			fyne.NewMenuItem("Translate Window", func() { translateText(guiApp) }),
+			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Home Screen", func() { sysTray.Show() }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Settings", func() { showSetting(guiApp) }),
+			fyne.NewMenuItem("Keyboard Shortcuts", func() { showShortcuts(guiApp) }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() { showAbout(guiApp) }),
 		))

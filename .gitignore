@@ -55,3 +55,4 @@ lerna-debug.log*
 *.tmp
 *.out
 /ctrl_plus_revise.tar.xz
+/Ctrl+Revise.app/
