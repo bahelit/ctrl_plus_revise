@@ -243,7 +243,6 @@ func checkOllamaConnection(ollamaURL *string) bool {
 	} else {
 		ollamaClient = ollama.ConnectToOllama()
 	}
-	ollamaClient = ollama.ConnectToOllama()
 	err := ollamaClient.Heartbeat(heartBeatCtx)
 	if err == nil {
 		slog.Info("Connected to Ollama")
