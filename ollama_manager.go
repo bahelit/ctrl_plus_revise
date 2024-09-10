@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"io"
 	"log/slog"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 )
 
@@ -38,6 +38,7 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 	if urlOverride != "" {
 		ollamaURL = urlOverride
 	}
+	urlNote := widget.NewLabel("Press the \"Enter\" key to test the connection")
 	ollamaURLEntry := widget.NewEntry()
 	ollamaURLEntry.SetText(ollamaURL)
 	ollamaURLEntry.Validator = func(s string) error {
@@ -67,16 +68,38 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 			slog.Error("Invalid URL", "error", err)
 			return
 		}
-		_ = checkOllamaConnection(&s)
+		connected := checkOllamaConnection(&s)
+		if connected {
+			w := guiApp.NewWindow("Successfully Connected")
+			msg := widget.NewLabel("Successfully Connected to Ollama")
+			msg.TextStyle = fyne.TextStyle{Bold: true}
+			msg.Alignment = fyne.TextAlignCenter
+			w.SetContent(msg)
+			w.Show()
+			time.Sleep(3 * time.Second)
+			w.Close()
+		} else {
+			w := guiApp.NewWindow("Invalid URL")
+			msg := widget.NewLabel("Couldn't connect to Ollama - Please check the URL and port are valid")
+			msg.TextStyle = fyne.TextStyle{Bold: true}
+			msg.Alignment = fyne.TextAlignCenter
+			w.SetContent(msg)
+			w.Show()
+			time.Sleep(3 * time.Second)
+			w.Close()
+			slog.Error("Invalid URL", "error", err)
+		}
 	}
 	useRemoteOllamaCheckbox := remoteOllamaCheckbox(guiApp)
 	useRemoteOllamaCheckbox.OnChanged = func(b bool) {
 		if b {
 			ollamaURLEntry.Show()
+			urlNote.Show()
 			guiApp.Preferences().SetBool(UseRemoteOllamaKey, true)
 			slog.Debug("Show Pop-Up is on")
 		} else {
 			ollamaURLEntry.Hide()
+			urlNote.Hide()
 			guiApp.Preferences().SetBool(UseRemoteOllamaKey, false)
 			slog.Debug("Show Pop-Up is off")
 		}
@@ -84,8 +107,10 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 	}
 	if useRemoteOllamaCheckbox.Checked {
 		ollamaURLEntry.Show()
+		urlNote.Show()
 	} else {
 		ollamaURLEntry.Hide()
+		urlNote.Hide()
 	}
 	manualInstall := widget.NewHyperlink(
 		"Manual Install Link",
@@ -117,7 +142,7 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 		dockerMsg.Hide()
 	}
 
-	managerLayout := container.NewVBox(useRemoteOllamaCheckbox, ollamaURLEntry, dockerMsg, fetchOllama, manualInstall)
+	managerLayout := container.NewVBox(useRemoteOllamaCheckbox, urlNote, ollamaURLEntry, dockerMsg, fetchOllama, manualInstall)
 
 	ollamaManagerWindow.SetContent(managerLayout)
 	ollamaManagerWindow.Canvas().Focus(ollamaURLEntry)
@@ -247,17 +272,11 @@ func checkOllamaConnection(ollamaURL *string) bool {
 	if err == nil {
 		slog.Info("Connected to Ollama")
 		return true
-	} else {
-		guiApp.SendNotification(&fyne.Notification{
-			Title:   "Ollama Connection Error",
-			Content: "Failed to connect to Ollama."})
-		slog.Error("Cannot connect to Ollama", "error", err)
-		heartBeatCancel()
 	}
 	if <-heartBeatCtx.Done(); true {
 		guiApp.SendNotification(&fyne.Notification{
 			Title:   "Ollama Connection Error",
-			Content: "Time out trying to connect to Ollama."})
+			Content: "Timed out trying to connect to Ollama."})
 		slog.Error("timed out connecting to Ollama")
 	}
 	return false

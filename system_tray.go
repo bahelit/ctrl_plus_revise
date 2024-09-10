@@ -96,7 +96,7 @@ func setupTrayMenu(guiApp fyne.App, sysTray fyne.Window) {
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Home Screen", func() { sysTray.Show() }),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Settings", func() { showSetting(guiApp) }),
+			fyne.NewMenuItem("Settings", func() { showSettings(guiApp) }),
 			fyne.NewMenuItem("Keyboard Shortcuts", func() { showShortcuts(guiApp) }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("About", func() { showAbout(guiApp) }),
@@ -449,9 +449,6 @@ func selectAIModelDropDown() *widget.Select {
 				slog.Error("Failed to set selectedModelBinding", "error", err)
 			}
 			slog.Debug("Selected model", "model", selectedModel)
-			if ollamaClient != nil {
-				_ = PullModelWrapper(selectedModel, false)
-			}
 		})
 	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
 	selection := itemAndText[ollama.ModelName(model)]
@@ -543,7 +540,7 @@ func UpdateDropDownMenus() {
 	aiModelDropdown.SetSelected(selectedModel.String())
 }
 
-func showSetting(guiApp fyne.App) {
+func showSettings(guiApp fyne.App) {
 	slog.Debug("Showing settings")
 	settingsWindow := guiApp.NewWindow("Ctrl+Revise Settings")
 
@@ -594,10 +591,14 @@ func showSetting(guiApp fyne.App) {
 	configureOllama := widget.NewButton("Configure Ollama", func() {
 		installOrUpdateOllamaWindow(guiApp)
 	})
+	downloadModel := widget.NewButton("Download/Update Model", func() {
+		_ = PullModelWrapper(selectedModel, true)
+	})
 
 	buttons := container.NewVBox(
 		keyboardShortcutsButton,
 		configureOllama,
+		downloadModel,
 	)
 
 	chooseActionLabel := widget.NewLabel("Choose what the AI should do to the highlighted text:")
@@ -800,6 +801,7 @@ func askQuestion(guiApp fyne.App) {
 	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
 	questionWindow := container.NewBorder(questionLayout, buttonLayout, nil, nil, text)
 	question.SetContent(container.NewVScroll(questionWindow))
+	question.Canvas().Focus(text)
 	question.Show()
 }
 
@@ -840,7 +842,7 @@ func setBindingVariables() error {
 
 func makeMenu(a fyne.App, w fyne.Window) *fyne.MainMenu {
 	openSettings := func() {
-		showSetting(guiApp)
+		showSettings(guiApp)
 	}
 	showAbout := func() {
 		showAbout(guiApp)

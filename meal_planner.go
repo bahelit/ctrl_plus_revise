@@ -35,8 +35,8 @@ type MealInfo struct {
 
 func mealPlanner(guiApp fyne.App) {
 	var (
-		screenHeight float32 = 550.0
-		screenWidth  float32 = 650.0
+		screenHeight float32 = 575.0
+		screenWidth  float32 = 655.0
 	)
 	mealPlanner := guiApp.NewWindow("Ctrl+Revise Meal Planner")
 	mealPlanner.Resize(fyne.NewSize(screenWidth, screenHeight))

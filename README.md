@@ -22,7 +22,7 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 - **Keyboard shortcuts**: Uses keyboard shortcuts to provide quick responses without switching focus away to another program.
 - **Local AI model**: Runs locally on your machine, ensuring your privacy and data security.
 - **Multiple AI models**: Supports multiple AI models to provide a variety of suggestions.
-- **Meal Planner**: Create recipes, meal prep plans, and grocer lists based on what you have with a simple GUI.
+- **Meal Planner**: Create recipes, meal prep plans, and grocery lists based on what you have with a simple GUI.
 - **Text Translation**: Supports translation to and from multiple languages.
 - **Grammar Correction**: Corrects grammar mistakes in the text.
 - **Change Tone**: Changes the tone of the text to be more formal or informal.
@@ -162,6 +162,7 @@ Contributions are welcome and will be fully credited.
 * [X] Docker - pull based on GPU type
 * [X] Custom keyboard shortcuts
 * [X] Settings menu for Ollama connection
+* [X] Improve model management - Download and update modals from the settings
 * [ ] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
