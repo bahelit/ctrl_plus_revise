@@ -1,4 +1,4 @@
-package main
+package food
 
 func getMeals() []string {
 	meals := []string{

@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/go-vgo/robotgo/clipboard"
+	"github.com/bahelit/ctrl_plus_revise/pkg/clipboard"
 )
 
 func main() {
-	err := clipboard.WriteAll("日本語")
+	err := clipboard.WriteAll("Hello Clipboard!")
 	if err != nil {
 		log.Println("clipboard write all error: ", err)
 	}

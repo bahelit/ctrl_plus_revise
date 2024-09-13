@@ -2,8 +2,10 @@ package ollama
 
 import (
 	"context"
+	"fyne.io/fyne/v2"
 	"log/slog"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/config"
 	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/ollama/ollama/api"
 )
@@ -146,10 +148,14 @@ func (prompt PromptMsg) PromptExtraToText() string {
 	return text.promptExtra
 }
 
-func AskAIWithPromptMsg(client *api.Client, model ModelName, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
+func GetActiveModel(guiApp fyne.App) ModelName {
+	return ModelName(guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(Llama3Dot1)))
+}
+
+func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  GetActiveModel(guiApp).String(),
 		Prompt: prompt.PromptToText() + " [ " + inputForPrompt + " ] " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
@@ -173,11 +179,11 @@ func AskAIWithPromptMsg(client *api.Client, model ModelName, prompt PromptMsg, i
 	return response, nil
 }
 
-func AskAiWithContext(client *api.Client, model ModelName, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
+func AskAiWithContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  GetActiveModel(guiApp).String(),
 		Prompt: prompt.PromptToText() + " " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream:  new(bool),
@@ -202,11 +208,11 @@ func AskAiWithContext(client *api.Client, model ModelName, msgContext []int, pro
 	return response, nil
 }
 
-func AskAiWithStringAndContext(client *api.Client, model ModelName, msgContext []int, prompt string) (api.GenerateResponse, error) {
+func AskAiWithStringAndContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt string) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  GetActiveModel(guiApp).String(),
 		Prompt: prompt,
 		// set streaming to false
 		Stream:  new(bool),
@@ -231,10 +237,10 @@ func AskAiWithStringAndContext(client *api.Client, model ModelName, msgContext [
 	return response, nil
 }
 
-func AskAI(client *api.Client, model ModelName, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAI(guiApp fyne.App, client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: model.String(),
+		Model: GetActiveModel(guiApp).String(),
 		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
@@ -261,10 +267,10 @@ func AskAI(client *api.Client, model ModelName, inputForPrompt string) (api.Gene
 	return response, nil
 }
 
-func AskAIToTranslate(client *api.Client, model ModelName, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
+func AskAIToTranslate(guiApp fyne.App, client *api.Client, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: model.String(),
+		Model: GetActiveModel(guiApp).String(),
 		Prompt: "As a text translator" +
 			"Please provide a translation that accurately conveys the original meaning and tone of the text. \n" +
 			"If you encounter any ambiguities or uncertainties, please indicate this in your response. \n" +
@@ -294,8 +300,9 @@ func AskAIToTranslate(client *api.Client, model ModelName, inputForPrompt string
 	return response, nil
 }
 
-func PullModel(client *api.Client, model ModelName, pf api.PullProgressFunc, update bool) error {
+func PullModel(guiApp fyne.App, client *api.Client, pf api.PullProgressFunc, update bool) error {
 	ctx := context.Background()
+	model := GetActiveModel(guiApp)
 	req := &api.PullRequest{
 		Model: model.String(),
 	}

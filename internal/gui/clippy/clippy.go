@@ -1,9 +1,8 @@
-package main
+package clippy
 
 import (
 	"crypto/sha256"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui"
-	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -12,11 +11,13 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	ollamaApi "github.com/ollama/ollama/api"
 )
 
-func questionPopUp(a fyne.App, question string, response *ollamaApi.GenerateResponse) {
-	w := a.NewWindow("Ctrl+Revise")
+func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question string, response *ollamaApi.GenerateResponse) {
+	w := guiApp.NewWindow("Ctrl+Revise")
 	w.Resize(fyne.NewSize(640, 500))
 	hello := widget.NewLabel("Glad to Help!")
 	hello.TextStyle = fyne.TextStyle{Bold: true}
@@ -40,64 +41,62 @@ func questionPopUp(a fyne.App, question string, response *ollamaApi.GenerateResp
 
 	vbox := container.NewVScroll(generatedText1)
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
-
 	buttons := container.NewHBox(
 		widget.NewButton("Try Again", func() {
-			loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-				"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
+			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+				"Trying Again...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(ollamaClient, ollama.ModelName(model), response.Context, ollama.TryAgain)
+			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.TryAgain)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastClipboardContent = sha256.Sum256([]byte(response.Response))
+			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			questionPopUp(a, question, &reGenerated)
+			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text more Friendly", func() {
-			loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-				"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
+			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+				"Making the text more Friendly...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(ollamaClient, ollama.ModelName(model), response.Context, ollama.MakeItFriendlyRedo)
+			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItFriendlyRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastClipboardContent = sha256.Sum256([]byte(response.Response))
+			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			questionPopUp(a, question, &reGenerated)
+			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text more Professional", func() {
-			loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-				"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
+			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+				"Making the text more Professional...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(ollamaClient, ollama.ModelName(model), response.Context, ollama.MakeItProfessionalRedo)
+			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItProfessionalRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastClipboardContent = sha256.Sum256([]byte(response.Response))
+			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			questionPopUp(a, question, &reGenerated)
+			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text a Bulleted List", func() {
-			loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-				"Using model: "+ollama.ModelName(model).String()+" with prompt: "+selectedPrompt.String()+"...")
+			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+				"Making the text a Bulleted List...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(ollamaClient, ollama.ModelName(model), response.Context, ollama.MakeItAListRedo)
+			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItAListRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
 			}
-			lastClipboardContent = sha256.Sum256([]byte(response.Response))
+			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			questionPopUp(a, question, &reGenerated)
+			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButtonWithIcon("Copy generated text to Clipboard", theme.ContentCopyIcon(), func() {
 			w.Clipboard().SetContent(response.Response)

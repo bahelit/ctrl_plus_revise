@@ -22,8 +22,8 @@ func connectToDocker() (*docker.Client, error) {
 	return cli, nil
 }
 
-func SetupDocker() (connectedToOllama bool) {
-	connectedToOllama = false
+func SetupDocker() (connectedToOllamaContainer bool) {
+	connectedToOllamaContainer = false
 	dockerClient, err := connectToDocker()
 	if err != nil {
 		slog.Error("Failed to connect to Docker", "error", err)
@@ -35,7 +35,7 @@ func SetupDocker() (connectedToOllama bool) {
 	if err != nil {
 		slog.Error("Failed to connect to Docker", "error", err)
 		pingCancel()
-		return connectedToOllama
+		return connectedToOllamaContainer
 	}
 	if <-pingCtx.Done(); true {
 		slog.Error("Timed out trying to connect to Docker")
@@ -47,11 +47,11 @@ func SetupDocker() (connectedToOllama bool) {
 	// Check Docker containers
 	ContainerID, err = startOllamaContainer(dockerClient)
 	if err != nil {
-		return connectedToOllama
+		return connectedToOllamaContainer
 	}
 	if ContainerID != "" {
-		connectedToOllama = true
-		return connectedToOllama
+		connectedToOllamaContainer = true
+		return connectedToOllamaContainer
 	}
-	return connectedToOllama
+	return connectedToOllamaContainer
 }
