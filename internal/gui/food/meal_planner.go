@@ -2,7 +2,6 @@ package food
 
 import (
 	"crypto/sha256"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"log/slog"
 	"math/rand"
 	"net/url"
@@ -19,6 +18,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/config"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	ollamaApi "github.com/ollama/ollama/api"

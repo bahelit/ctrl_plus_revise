@@ -1,4 +1,4 @@
-package clippy
+package chat
 
 import (
 	"crypto/sha256"
@@ -16,7 +16,7 @@ import (
 	ollamaApi "github.com/ollama/ollama/api"
 )
 
-func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question string, response *ollamaApi.GenerateResponse) {
+func chatTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client, question string, response *ollamaApi.GenerateResponse) {
 	w := guiApp.NewWindow("Ctrl+Revise")
 	w.Resize(fyne.NewSize(640, 500))
 	hello := widget.NewLabel("Glad to Help!")
@@ -54,7 +54,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
+			chatTab(guiApp, tabs, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text more Friendly", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -68,7 +68,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
+			chatTab(guiApp, tabs, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text more Professional", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -82,7 +82,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
+			chatTab(guiApp, tabs, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButton("Make the text a Bulleted List", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -96,7 +96,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
 			w.Hide()
 			loadingScreen.Hide()
-			QuestionPopUp(guiApp, ollamaClient, question, &reGenerated)
+			chatTab(guiApp, tabs, ollamaClient, question, &reGenerated)
 		}),
 		widget.NewButtonWithIcon("Copy generated text to Clipboard", theme.ContentCopyIcon(), func() {
 			w.Clipboard().SetContent(response.Response)

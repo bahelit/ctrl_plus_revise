@@ -2,11 +2,17 @@ package chat
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/bahelit/ctrl_plus_revise/internal/config"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/bindings"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/question"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/settings"
+	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/google/uuid"
 	ollamaApi "github.com/ollama/ollama/api"
 )
@@ -26,29 +32,87 @@ var (
 )
 
 func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
+	var (
+		screenHeight float32 = 575.0
+		screenWidth  float32 = 655.0
+		//tabs         container.AppTabs
+	)
 	w := guiApp.NewWindow("Ctrl+Revise Chatbot")
-	w.Resize(fyne.NewSize(640, 500))
+	w.Resize(fyne.NewSize(screenWidth, screenHeight))
+
 	hello := widget.NewLabel("Glad to Help!")
 	hello.TextStyle = fyne.TextStyle{Bold: true}
 	hello.Alignment = fyne.TextAlignCenter
 
-	questionText := widget.NewLabel("Question:")
+	mainEntry := createMainEntry(guiApp, ollamaClient)
+	chatLayout := createChatEntry(guiApp, w)
+	chatLayout2 := createChatEntry(guiApp, w)
+
+	startChatTab := container.NewTabItem("Home", mainEntry)
+	chatTab := container.NewTabItem("Blah Blah Blah", chatLayout)
+	chatTab1 := container.NewTabItem("Yakity Yak", chatLayout2)
+	verticalTabs := container.NewAppTabs(startChatTab, chatTab, chatTab1)
+	verticalTabs.SetTabLocation(container.TabLocationLeading)
+	//verticalTabs.Append(container.NewTabItem("Chat", chatLayout))
+	tabContainer := container.NewBorder(hello, nil, nil, nil, verticalTabs)
+	w.SetContent(tabContainer)
+	w.Show()
+}
+
+func createMainEntry(guiApp fyne.App, ollamaClient *ollamaApi.Client) *fyne.Container {
+	chatBotSelection := settings.SelectAIModelDropDown(guiApp)
+	chatBotSelection.OnChanged = func(s string) {
+		modelSelected := ollama.StringToModel(s)
+		guiApp.Preferences().SetInt(config.CurrentModelKey, int(modelSelected))
+	}
+	saveDefaultModelButton := widget.NewButton("Set as default", func() {
+		bindings.AiModelDropdown.SetSelected(chatBotSelection.Selected)
+		bindings.AiModelDropdown.OnChanged = func(s string) {
+
+			modelSelected := ollama.StringToModel(s)
+			guiApp.Preferences().SetInt(config.CurrentModelKey, int(modelSelected))
+		}
+	})
+
+	model := container.NewVBox(chatBotSelection, container.NewCenter(saveDefaultModelButton))
+	questionContainer := question.AskQuestion(guiApp, ollamaClient)
+
+	logo := canvas.NewImageFromResource(guiApp.Icon())
+	logo.FillMode = canvas.ImageFillOriginal
+	if fyne.CurrentDevice().IsMobile() {
+		logo.SetMinSize(fyne.NewSize(192, 192))
+	} else {
+		logo.SetMinSize(fyne.NewSize(256, 256))
+	}
+
+	chatLayout := container.NewBorder(
+		model,
+		questionContainer,
+		nil,
+		nil,
+		logo)
+	return chatLayout
+}
+
+func createChatEntry(guiApp fyne.App, w fyne.Window) *fyne.Container {
+	questionTextLabel := widget.NewLabel("Question:")
+	questionTextLabel.Alignment = fyne.TextAlignLeading
+	questionTextLabel.Wrapping = fyne.TextWrapWord
+	questionTextLabel.TextStyle = fyne.TextStyle{Bold: true}
+	questionText := widget.NewLabel("")
 	questionText.Alignment = fyne.TextAlignLeading
 	questionText.Wrapping = fyne.TextWrapWord
-	questionText.TextStyle = fyne.TextStyle{Bold: true}
-	questionText1 := widget.NewLabel("")
-	questionText1.Alignment = fyne.TextAlignLeading
-	questionText1.Wrapping = fyne.TextWrapWord
 
-	generatedText := widget.NewLabel("AI Response:")
-	generatedText.Alignment = fyne.TextAlignLeading
+	generatedTextLabel := widget.NewLabel("AI Response:")
+	generatedTextLabel.Alignment = fyne.TextAlignLeading
+	generatedTextLabel.Wrapping = fyne.TextWrapWord
+	generatedTextLabel.TextStyle = fyne.TextStyle{Bold: true}
+	questionSection := container.NewVBox(questionTextLabel, questionText, generatedTextLabel)
+
+	generatedText := widget.NewRichTextFromMarkdown("")
 	generatedText.Wrapping = fyne.TextWrapWord
-	generatedText.TextStyle = fyne.TextStyle{Bold: true}
-
-	generatedText1 := widget.NewRichTextFromMarkdown("")
-	generatedText1.Wrapping = fyne.TextWrapWord
-
-	vbox := container.NewVScroll(generatedText1)
+	vbox := container.NewVScroll(generatedText)
+	textResponse := container.New(layout.NewAdaptiveGridLayout(1), vbox)
 
 	buttons := container.NewHBox(
 		widget.NewButton("Try Again", func() {
@@ -86,15 +150,11 @@ func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	)
 	buttons.Layout = layout.NewAdaptiveGridLayout(3)
 
-	grid := container.New(layout.NewAdaptiveGridLayout(1), vbox)
-
-	questionSection := container.NewVBox(hello, questionText, questionText1, generatedText)
-	w.SetContent(container.NewBorder(
+	chatLayout := container.NewBorder(
 		questionSection,
 		buttons,
 		nil,
 		nil,
-		container.NewVScroll(grid),
-	))
-	w.Show()
+		container.NewVScroll(textResponse))
+	return chatLayout
 }

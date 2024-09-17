@@ -92,7 +92,11 @@ func ShowSettings(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	bindings.AiActionDropdown = selectCopyActionDropDown(guiApp)
 	chooseModelLabel := widget.NewLabel("Choose which AI should respond to the highlighted text:")
 	chooseModelLabel.Alignment = fyne.TextAlignTrailing
-	bindings.AiModelDropdown = selectAIModelDropDown(guiApp)
+	bindings.AiModelDropdown = SelectAIModelDropDown(guiApp)
+	bindings.AiModelDropdown.OnChanged = func(s string) {
+		modelSelected := ollama.StringToModel(s)
+		guiApp.Preferences().SetInt(config.CurrentModelKey, int(modelSelected))
+	}
 	chooseLanguageLabel := widget.NewLabel("Choose the languages for translation")
 	chooseLanguageLabel.Alignment = fyne.TextAlignTrailing
 	fromLangDropdown := SelectTranslationFromDropDown(guiApp)
@@ -442,7 +446,7 @@ func selectCopyActionDropDown(guiApp fyne.App) *widget.Select {
 }
 
 //nolint:gocyclo // it's a GUI function
-func selectAIModelDropDown(guiApp fyne.App) *widget.Select {
+func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 	var (
 		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
 		llama3          = "Llama 3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String()
@@ -519,7 +523,6 @@ func selectAIModelDropDown(guiApp fyne.App) *widget.Select {
 				slog.Error("Invalid selection", "value", value)
 				selectedModel = ollama.Llama3
 			}
-			guiApp.Preferences().SetInt(config.CurrentModelKey, int(selectedModel))
 			err := bindings.SelectedModelBinding.Set(int(selectedModel))
 			if err != nil {
 				slog.Error("Failed to set SelectedModelBinding", "error", err)

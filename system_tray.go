@@ -54,7 +54,7 @@ func SetupSysTray(guiApp fyne.App, ollamaClient *ollamaApi.Client) fyne.Window {
 func setupTrayMenu(guiApp fyne.App, ollamaClient *ollamaApi.Client, sysTray fyne.Window) {
 	if desk, ok := guiApp.(desktop.App); ok {
 		desk.SetSystemTrayMenu(fyne.NewMenu(TrayMenuTitle,
-			fyne.NewMenuItem("Ask a Question", func() { question.AskQuestion(guiApp, ollamaClient) }),
+			fyne.NewMenuItem("Ask a Question", func() { question.AskQuestionWindow(guiApp, ollamaClient) }),
 			fyne.NewMenuItem("Meal Planner", func() { food.MealPlanner(guiApp, ollamaClient) }),
 			fyne.NewMenuItem("Translate Window", func() { translator.TranslateText(guiApp, ollamaClient) }),
 			fyne.NewMenuItemSeparator(),
@@ -73,7 +73,7 @@ func setupTrayWindowContent(guiApp fyne.App, ollamaClient *ollamaApi.Client, sys
 	welcomeText := mainWindowText()
 
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
-		question.AskQuestion(guiApp, ollamaClient)
+		question.AskQuestionWindow(guiApp, ollamaClient)
 	})
 	chatButton := widget.NewButton("Chat with AI - Beta", func() {
 		chat.ConversationManager(guiApp, ollamaClient)

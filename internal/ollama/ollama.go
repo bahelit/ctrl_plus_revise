@@ -4,6 +4,7 @@ import (
 	"context"
 	"fyne.io/fyne/v2"
 	"log/slog"
+	"strconv"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/config"
 	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
@@ -150,6 +151,15 @@ func (prompt PromptMsg) PromptExtraToText() string {
 
 func GetActiveModel(guiApp fyne.App) ModelName {
 	return ModelName(guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(Llama3Dot1)))
+}
+
+func StringToModel(s string) ModelName {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		slog.Error("Unable to convert string to int", "string", s)
+		return Llama3Dot1
+	}
+	return ModelName(i)
 }
 
 func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
