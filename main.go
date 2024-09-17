@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	ollamaApi "github.com/ollama/ollama/api"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/config"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/settings"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
 	"github.com/bahelit/ctrl_plus_revise/internal/hardware"

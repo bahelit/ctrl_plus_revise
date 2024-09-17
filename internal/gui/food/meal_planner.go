@@ -3,11 +3,11 @@ package food
 import (
 	"crypto/sha256"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui/menu"
 	"log/slog"
 	"math/rand"
 	"net/url"
 	"sort"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -42,11 +42,10 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	var (
 		screenHeight float32 = 575.0
 		screenWidth  float32 = 655.0
+		tabs         container.AppTabs
 	)
 	mealPlanner := guiApp.NewWindow("Ctrl+Revise Meal Planner")
 	mealPlanner.Resize(fyne.NewSize(screenWidth, screenHeight))
-
-	mealPlanner.SetMainMenu(menu.MakeMenu(guiApp, ollamaClient, mealPlanner))
 
 	var mealInfo MealInfo
 
@@ -151,8 +150,8 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	veggiesTab := container.NewTabItem("Vegetables", container.NewVScroll(veggieCard))
 	proteinTab := container.NewTabItem("Protein", container.NewVScroll(proteinCard))
 	allergyTab := container.NewTabItem("Allergy", container.NewVScroll(allergyCard))
-	tabs := container.NewAppTabs(mealTab, themeTab, cookwareTab, herbsTab, veggiesTab, dairyTab, pantryTab, proteinTab, freezerTab, allergyTab)
-	tabs.SetTabLocation(container.TabLocationLeading)
+	verticalTabs := container.NewAppTabs(mealTab, themeTab, cookwareTab, herbsTab, veggiesTab, dairyTab, pantryTab, proteinTab, freezerTab, allergyTab)
+	verticalTabs.SetTabLocation(container.TabLocationLeading)
 
 	mealInfo.Consumers = consumersValidated.Text
 	mealInfo.Cookware = shuffleStringArray(cookWare.Selected)
@@ -180,7 +179,7 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 			return
 		}
 		loadingScreen.Hide()
-		recipePopUp(guiApp, ollamaClient, recipe, &generated)
+		recipePopUp(guiApp, &tabs, ollamaClient, recipe, &generated)
 	})
 	suggest.Importance = widget.HighImportance
 	suggestPrep := widget.NewButton("Prep Multiple Meals", func() {
@@ -199,7 +198,7 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 			return
 		}
 		loadingScreen.Hide()
-		recipePopUp(guiApp, ollamaClient, recipe, &generated)
+		recipePopUp(guiApp, &tabs, ollamaClient, recipe, &generated)
 	})
 	suggestPrep.Importance = widget.HighImportance
 	groceryList := widget.NewButton("Create a Grocery List", func() {
@@ -218,7 +217,7 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 			return
 		}
 		loadingScreen.Hide()
-		recipePopUp(guiApp, ollamaClient, recipe, &generated)
+		recipePopUp(guiApp, &tabs, ollamaClient, recipe, &generated)
 	})
 	groceryList.Importance = widget.SuccessImportance
 	budgetFriendlyGroceryList := widget.NewButton("Create a Budget Friendly Grocery List", func() {
@@ -237,15 +236,19 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 			return
 		}
 		loadingScreen.Hide()
-		recipePopUp(guiApp, ollamaClient, recipe, &generated)
+		recipePopUp(guiApp, &tabs, ollamaClient, recipe, &generated)
 	})
 	budgetFriendlyGroceryList.Importance = widget.SuccessImportance
 
 	action := container.NewHBox(suggest, groceryList, suggestPrep, budgetFriendlyGroceryList)
 	action.Layout = layout.NewAdaptiveGridLayout(2)
 
-	boarderLayout := container.NewBorder(topText, action, nil, nil, tabs)
-	mealPlanner.SetContent(boarderLayout)
+	boarderLayout := container.NewBorder(nil, action, nil, nil, verticalTabs)
+	mealPlannerTab := container.NewTabItem("Meal Planner", boarderLayout)
+	tabs.Append(mealPlannerTab)
+	tabContainer := container.NewBorder(topText, nil, nil, nil, &tabs)
+
+	mealPlanner.SetContent(tabContainer)
 	mealPlanner.Show()
 }
 
@@ -278,18 +281,12 @@ func addMarkdownFormattingToRecipe(recipe string) string {
 	return recipe + ". " + "format: markdown"
 }
 
-func recipePopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, recipe string, response *ollamaApi.GenerateResponse) {
-	w := guiApp.NewWindow("Ctrl+Revise AI Recipes")
-	w.Resize(fyne.NewSize(640, 500))
-
-	hello := widget.NewLabel("Let's Get Cooking!")
-	hello.TextStyle = fyne.TextStyle{Bold: true}
-	hello.Alignment = fyne.TextAlignCenter
-
+func recipePopUp(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client, recipe string, response *ollamaApi.GenerateResponse) {
 	generatedText1 := widget.NewRichTextFromMarkdown(response.Response)
 	generatedText1.Wrapping = fyne.TextWrapWord
 
 	vbox := container.NewVScroll(generatedText1)
+	tabCount := len(tabs.Items)
 
 	buttons := container.NewPadded(
 		widget.NewButton("Something Different", func() {
@@ -303,24 +300,8 @@ func recipePopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, recipe string,
 				return
 			}
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
-			w.Hide()
 			loadingScreen.Hide()
-			recipePopUp(guiApp, ollamaClient, recipe, &reGenerated)
-		}),
-		widget.NewButton("Pick a different Protein", func() {
-			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
-				"Pick a different Protein...")
-			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithStringAndContext(guiApp, ollamaClient, response.Context,
-				"That doesn't sound good, how about something with a different protein please.")
-			if err != nil {
-				slog.Error("Failed to re-generate", "error", err)
-				return
-			}
-			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
-			w.Hide()
-			loadingScreen.Hide()
-			recipePopUp(guiApp, ollamaClient, recipe, &reGenerated)
+			recipePopUp(guiApp, tabs, ollamaClient, recipe, &reGenerated)
 		}),
 		widget.NewButton("Something Simple and Quick", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -333,9 +314,8 @@ func recipePopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, recipe string,
 				return
 			}
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
-			w.Hide()
 			loadingScreen.Hide()
-			recipePopUp(guiApp, ollamaClient, recipe, &reGenerated)
+			recipePopUp(guiApp, tabs, ollamaClient, recipe, &reGenerated)
 		}),
 		widget.NewButton("Something Healthy", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -348,9 +328,8 @@ func recipePopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, recipe string,
 				return
 			}
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
-			w.Hide()
 			loadingScreen.Hide()
-			recipePopUp(guiApp, ollamaClient, recipe, &reGenerated)
+			recipePopUp(guiApp, tabs, ollamaClient, recipe, &reGenerated)
 		}),
 		widget.NewButton("Let's Not Cook", func() {
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
@@ -363,28 +342,31 @@ func recipePopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, recipe string,
 				return
 			}
 			shortcuts.LastClipboardContent = sha256.Sum256([]byte(response.Response))
-			w.Hide()
 			loadingScreen.Hide()
-			recipePopUp(guiApp, ollamaClient, recipe, &reGenerated)
+			recipePopUp(guiApp, tabs, ollamaClient, recipe, &reGenerated)
+		}),
+		widget.NewButtonWithIcon("Close Recipe", theme.ContentClearIcon(), func() {
+			tabs.Remove(tabs.Selected())
 		}),
 		widget.NewButtonWithIcon("Copy the Recipe to Clipboard", theme.ContentCopyIcon(), func() {
-			w.Clipboard().SetContent(response.Response)
-			w.Close()
+			// TODO: Pass in window?
+			//w.Clipboard().SetContent(response.Response)
+			//w.Close()
 		}),
 	)
+
 	buttons.Layout = layout.NewAdaptiveGridLayout(3)
 	center := container.NewVBox(buttons, layout.NewSpacer(), footer())
-
 	grid := container.New(layout.NewAdaptiveGridLayout(1), vbox)
-
-	w.SetContent(container.NewBorder(
-		hello,
+	tabSpace := container.NewBorder(
+		nil,
 		center,
 		nil,
 		nil,
 		container.NewVScroll(grid),
-	))
-	w.Show()
+	)
+	tabs.Append(container.NewTabItem("Recipe #"+strconv.Itoa(tabCount), tabSpace))
+	tabs.SelectIndex(tabCount)
 }
 
 func footer() *fyne.Container {
