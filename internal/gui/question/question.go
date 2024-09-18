@@ -93,8 +93,8 @@ func AskQuestionWindow(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	question.Show()
 }
 
-func AskQuestion(guiApp fyne.App, ollamaClient *ollamaApi.Client) *fyne.Container {
-	slog.Debug("Asking Question")
+func AskQuestionContainer(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client) *fyne.Container {
+	slog.Debug("Asking Question in Tab")
 
 	label1 := widget.NewLabel("Ask a Question")
 	label1.TextStyle = fyne.TextStyle{Bold: true}
@@ -102,7 +102,7 @@ func AskQuestion(guiApp fyne.App, ollamaClient *ollamaApi.Client) *fyne.Containe
 	label2.TextStyle = fyne.TextStyle{Italic: true}
 
 	text := widget.NewMultiLineEntry()
-	text.SetMinRowsVisible(4)
+	text.SetMinRowsVisible(3)
 	text.PlaceHolder = "Ask your question here, remember this is an AI and important\n" +
 		"questions should be verified with other sources."
 	text.OnSubmitted = func(s string) {
@@ -122,7 +122,7 @@ func AskQuestion(guiApp fyne.App, ollamaClient *ollamaApi.Client) *fyne.Containe
 			return
 		}
 		loadingScreen.Hide()
-		// TODO: Add tab, add tab close/save buttons
+		// TODO: Add tab, add tab close/save buttons, copy button should be with text response
 		clippy.QuestionPopUp(guiApp, ollamaClient, s, &response)
 	}
 	text.Validator = func(s string) error {
@@ -152,7 +152,7 @@ func AskQuestion(guiApp fyne.App, ollamaClient *ollamaApi.Client) *fyne.Containe
 			return
 		}
 		loadingScreen.Hide()
-		clippy.QuestionPopUp(guiApp, ollamaClient, text.Text, &response)
+		clippy.QuestionTab(guiApp, tabs, ollamaClient, text.Text, &response)
 	})
 
 	topText := container.NewHBox(label1, label2)

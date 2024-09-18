@@ -2,6 +2,8 @@ package chat
 
 import (
 	"crypto/sha256"
+	"fmt"
+	"github.com/google/uuid"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -116,4 +118,158 @@ func chatTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.C
 		container.NewVScroll(grid),
 	))
 	w.Show()
+}
+
+func mainQuestionContainer(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client) *fyne.Container {
+	slog.Debug("New Chat")
+
+	chat := &Chat{
+		UUID:      uuid.UUID{},
+		Owner:     uuid.UUID{},
+		Model:     0,
+		Title:     "Bonkers",
+		Questions: []string{},
+		Responses: []string{},
+	}
+
+	submitText := widget.NewLabel("Press Shift + Enter to submit text.")
+	submitText.TextStyle = fyne.TextStyle{Italic: true}
+
+	text := widget.NewMultiLineEntry()
+	text.SetMinRowsVisible(3)
+	text.PlaceHolder = "Continue your question here, it remembers what is in this chat,\n" +
+		"you can ask it to format the response in a certain way,\n" +
+		"or to expand on or summarize the response."
+	text.OnSubmitted = func(s string) {
+		slog.Debug("Question submitted - keyboard shortcut", "text", s)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+			"Asking question...")
+		loadingScreen.Show()
+		response, err := ollama.AskAI(guiApp, ollamaClient, s)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+		// TODO: Add tab, add tab close/save buttons, copy button should be with text response
+		chat.Questions = append(chat.Questions, text.Text)
+		chat.Responses = append(chat.Responses, response.Response)
+		chatTab := createChatEntry(guiApp, tabs, ollamaClient, chat)
+		ct := container.NewTabItem(chat.Title, chatTab)
+		tabs.Append(ct)
+		tabs.Select(ct)
+	}
+	text.Validator = func(s string) error {
+		if len(s) < 10 {
+			return fmt.Errorf("question too short")
+		}
+		if len(s) > 10000000 {
+			return fmt.Errorf("question too long, testing is needed before increasing the max length")
+		}
+		return nil
+	}
+
+	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+		slog.Debug("Question submitted", "text", text.Text)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+			"Asking question...")
+		loadingScreen.Show()
+		response, err := ollama.AskAI(guiApp, ollamaClient, text.Text)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+
+		chat.Questions = append(chat.Questions, text.Text)
+		chat.Responses = append(chat.Responses, response.Response)
+		chatTab := createChatEntry(guiApp, tabs, ollamaClient, chat)
+		ct := container.NewTabItem(chat.Title, chatTab)
+		tabs.Append(ct)
+		tabs.Select(ct)
+	})
+
+	questionWindow := container.NewBorder(submitText, submitQuestionsButton, nil, nil, text)
+	return questionWindow
+}
+
+func chatQuestionContainer(guiApp fyne.App, entries *fyne.Container, ollamaClient *ollamaApi.Client, chat *Chat) *fyne.Container {
+	slog.Debug("Chatting Question")
+
+	text := widget.NewMultiLineEntry()
+	text.SetMinRowsVisible(3)
+	text.PlaceHolder = "Continue your question here, it remembers what is in this chat,\n" +
+		"you can ask it to format the response in a certain way,\n" +
+		"or to expand on or summarize the response."
+	text.OnSubmitted = func(s string) {
+		slog.Debug("Question submitted - keyboard shortcut", "text", s)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+			"Asking question...")
+		loadingScreen.Show()
+		response, err := ollama.AskAI(guiApp, ollamaClient, s)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+		// TODO: Add tab, add tab close/save buttons, copy button should be with text response
+		newEntry := addChatEntry(text.Text, response.Response)
+		entries.Add(newEntry)
+		chat.Questions = append(chat.Questions, text.Text)
+		chat.Responses = append(chat.Responses, response.Response)
+	}
+	text.Validator = func(s string) error {
+		if len(s) < 10 {
+			return fmt.Errorf("question too short")
+		}
+		if len(s) > 10000000 {
+			return fmt.Errorf("question too long, testing is needed before increasing the max length")
+		}
+		return nil
+	}
+
+	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+		slog.Debug("Question submitted", "text", text.Text)
+		err := text.Validate()
+		if err != nil {
+			slog.Error("Error validating question", "error", err)
+			return
+		}
+		loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
+			"Asking question...")
+		loadingScreen.Show()
+		response, err := ollama.AskAI(guiApp, ollamaClient, text.Text)
+		if err != nil {
+			slog.Error("Failed to ask AI", "error", err)
+			loadingScreen.Hide()
+			return
+		}
+		loadingScreen.Hide()
+
+		newEntry := addChatEntry(text.Text, response.Response)
+		entries.Add(newEntry)
+		chat.Questions = append(chat.Questions, text.Text)
+		chat.Responses = append(chat.Responses, response.Response)
+	})
+
+	questionWindow := container.NewBorder(nil, submitQuestionsButton, nil, nil, text)
+	return questionWindow
 }
