@@ -7,6 +7,7 @@ const (
 	ShowStartWindowKey         = "showStartWindow"
 	firstRunKey                = "firstRun"
 	CurrentPromptKey           = "lastPrompt"
+	CurrentChatModelKey        = "lastChatModel"
 	CurrentModelKey            = "lastModel"
 	CurrentFromLangKey         = "fromLang"
 	CurrentToLangKey           = "toLang"

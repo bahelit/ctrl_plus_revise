@@ -17,22 +17,18 @@ import (
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/settings"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
+	"github.com/bahelit/ctrl_plus_revise/internal/store/database"
+	"github.com/bahelit/ctrl_plus_revise/internal/store/models/chat"
 )
-
-type Chat struct {
-	UUID      uuid.UUID `json:"uuid"`
-	Owner     uuid.UUID `json:"owner"`
-	Model     int       `json:"model"`
-	Context   int       `json:"context"`
-	Title     string    `json:"title"`
-	Questions []string  `json:"questions"`
-	Responses []string  `json:"responses"`
-}
 
 // TODO: Use an LRU cache to limit the items in ChatContents.
 var (
 	Chats        map[uuid.UUID]string
-	ChatContents map[uuid.UUID]Chat
+	ChatContents map[uuid.UUID]chat.Chat
+)
+
+const (
+	DefaultUser = "default"
 )
 
 func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
@@ -40,7 +36,15 @@ func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 		screenHeight float32 = 675.0
 		screenWidth  float32 = 755.0
 		verticalTabs         = container.NewAppTabs()
+		dbClient     *database.ChatBot
+		err          error
 	)
+
+	dbClient, err = database.NewSQLiteDB()
+	if err != nil {
+		slog.Error("Can NOT save chats", "err", err.Error())
+	}
+
 	w := guiApp.NewWindow("Ctrl+Revise Private Chatbot")
 	w.Resize(fyne.NewSize(screenWidth, screenHeight))
 
@@ -48,55 +52,45 @@ func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	//hello.TextStyle = fyne.TextStyle{Bold: true}
 	//hello.Alignment = fyne.TextAlignCenter
 
-	chat1 := Chat{
-		UUID:      uuid.UUID{},
-		Owner:     uuid.UUID{},
-		Model:     0,
-		Title:     "Bonkers",
-		Questions: []string{"What is a fart made of?", "What gases?"},
-		Responses: []string{"Stinky gases", "The stinky kind"},
-	}
-	chat2 := Chat{
-		UUID:      uuid.UUID{},
-		Owner:     uuid.UUID{},
-		Model:     0,
-		Title:     "Bonkers",
-		Questions: []string{"What is poop made of?", "What kind of leftovers?"},
-		Responses: []string{"Leftovers", "From the fridge."},
-	}
-
-	mainEntry := createMainEntry(guiApp, verticalTabs, ollamaClient)
-	chatLayout := createChatEntry(guiApp, verticalTabs, ollamaClient, &chat1)
-	chatLayout2 := createChatEntry(guiApp, verticalTabs, ollamaClient, &chat2)
-
+	mainEntry := createNewChatEntry(dbClient, guiApp, verticalTabs, ollamaClient)
 	startChatTab := container.NewTabItem("Home", mainEntry)
-	chatTab0 := container.NewTabItem("Blah Blah Blah", chatLayout)
-	chatTab1 := container.NewTabItem("Yakity Yak", chatLayout2)
+	verticalTabs.SetItems([]*container.TabItem{startChatTab})
 
-	verticalTabs.SetItems([]*container.TabItem{startChatTab, chatTab0, chatTab1})
+	if dbClient != nil {
+		savedChats, err := dbClient.GetAllChats(DefaultUser)
+		if err != nil {
+			slog.Error("Can NOT get chat history", "err", err.Error())
+		}
+		for i := range savedChats {
+			sc := createChatEntry(dbClient, guiApp, ollamaClient, *savedChats[i])
+			savedChatTab := container.NewTabItem(savedChats[i].Title, sc)
+			verticalTabs.Append(savedChatTab)
+		}
+	} else {
+		slog.Warn("Can not access saved chats")
+	}
+
 	verticalTabs.SetTabLocation(container.TabLocationLeading)
 	tabContainer := container.NewBorder(nil, nil, nil, nil, verticalTabs)
 	w.SetContent(tabContainer)
 	w.Show()
 }
 
-func createMainEntry(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client) *fyne.Container {
+func createNewChatEntry(dbClient *database.ChatBot, guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client) *fyne.Container {
+	var selectedModel ollama.ModelName
 	chatBotSelection := settings.SelectAIModelDropDown(guiApp)
 	chatBotSelection.OnChanged = func(s string) {
-		modelSelected := ollama.StringToModel(s)
-		guiApp.Preferences().SetInt(config.CurrentModelKey, int(modelSelected))
+		selectedModel = ollama.StringToModel(s)
+		guiApp.Preferences().SetInt(config.CurrentChatModelKey, int(selectedModel))
 	}
 	saveDefaultModelButton := widget.NewButton("Set as default", func() {
 		bindings.AiModelDropdown.SetSelected(chatBotSelection.Selected)
-		bindings.AiModelDropdown.OnChanged = func(s string) {
-
-			modelSelected := ollama.StringToModel(s)
-			guiApp.Preferences().SetInt(config.CurrentModelKey, int(modelSelected))
-		}
+		guiApp.Preferences().SetInt(config.CurrentChatModelKey, int(selectedModel))
+		guiApp.Preferences().SetInt(config.CurrentModelKey, int(selectedModel))
 	})
 	model := container.NewVBox(chatBotSelection, container.NewCenter(saveDefaultModelButton))
 
-	questionContainer := mainQuestionContainer(guiApp, tabs, ollamaClient)
+	questionContainer := newQuestionContainer(dbClient, guiApp, tabs, ollamaClient, selectedModel)
 
 	logo := canvas.NewImageFromResource(guiApp.Icon())
 	logo.FillMode = canvas.ImageFillOriginal
@@ -115,13 +109,13 @@ func createMainEntry(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *oll
 	return chatLayout
 }
 
-func createChatEntry(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaApi.Client, chat *Chat) *fyne.Container {
-	chatHeader := widget.NewLabel("Model: " + ollama.ModelName(chat.Model).String())
+func createChatEntry(dbClient *database.ChatBot, guiApp fyne.App, ollamaClient *ollamaApi.Client, chatEntry chat.Chat) *fyne.Container {
+	chatHeader := widget.NewLabel("Model: " + ollama.ModelName(chatEntry.Model).String())
 	entries := container.NewVBox()
 	var widgyCard *widget.Card
-	for key, questionFromChat := range chat.Questions {
-		if chat.Responses[key] != "" {
-			widgyCard = addChatEntry(questionFromChat, chat.Responses[key])
+	for key, questionFromChat := range chatEntry.Questions {
+		if chatEntry.Responses[key] != "" {
+			widgyCard = addChatEntry(questionFromChat, chatEntry.Responses[key])
 		} else {
 			widgyCard = addChatEntry(questionFromChat, "")
 		}
@@ -129,14 +123,14 @@ func createChatEntry(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *oll
 	}
 
 	allChats := container.NewVScroll(entries)
-	questionContainer := chatQuestionContainer(guiApp, entries, ollamaClient, chat)
+	questionContainer := chatQuestionContainer(dbClient, guiApp, entries, allChats, ollamaClient, chatEntry)
 
 	chatLayout := container.NewBorder(
 		chatHeader,
 		questionContainer,
 		nil,
 		nil,
-		container.NewVScroll(allChats))
+		allChats)
 	return chatLayout
 }
 

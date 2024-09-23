@@ -46,7 +46,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Trying Again...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.TryAgain)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.TryAgain)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -60,7 +60,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text more Friendly...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItFriendlyRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItFriendlyRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -74,7 +74,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text more Professional...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItProfessionalRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItProfessionalRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -88,7 +88,7 @@ func QuestionPopUp(guiApp fyne.App, ollamaClient *ollamaApi.Client, question str
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text a Bulleted List...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItAListRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItAListRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -148,7 +148,7 @@ func QuestionTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaA
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Trying Again...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.TryAgain)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.TryAgain)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -162,7 +162,7 @@ func QuestionTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaA
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text more Friendly...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItFriendlyRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItFriendlyRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -176,7 +176,7 @@ func QuestionTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaA
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text more Professional...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItProfessionalRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItProfessionalRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return
@@ -190,7 +190,7 @@ func QuestionTab(guiApp fyne.App, tabs *container.AppTabs, ollamaClient *ollamaA
 			loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 				"Making the text a Bulleted List...")
 			loadingScreen.Show()
-			reGenerated, err := ollama.AskAiWithContext(guiApp, ollamaClient, response.Context, ollama.MakeItAListRedo)
+			reGenerated, err := ollama.AskAiWithPromptAndContext(guiApp, ollamaClient, response.Context, ollama.MakeItAListRedo)
 			if err != nil {
 				slog.Error("Failed to re-generate", "error", err)
 				return

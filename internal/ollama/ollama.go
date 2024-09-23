@@ -189,7 +189,7 @@ func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, i
 	return response, nil
 }
 
-func AskAiWithContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
+func AskAiWithPromptAndContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
@@ -257,6 +257,37 @@ func AskAI(guiApp fyne.App, client *api.Client, inputForPrompt string) (api.Gene
 			"Don't explain you understand the input, just output the result.",
 		// set streaming to false
 		Stream: new(bool),
+	}
+
+	// TODO: implement timeout
+	ctx := context.Background()
+	respFunc := func(resp api.GenerateResponse) error {
+		// Only print the response here; GenerateResponse has a number of other
+		// interesting fields you want to examine.
+		response = resp
+		return nil
+	}
+
+	err := client.Generate(ctx, req, respFunc)
+	if err != nil {
+		slog.Error("Failed to generate", "error", err)
+		return api.GenerateResponse{}, err
+	}
+
+	return response, nil
+}
+
+func AskAIWithContext(guiApp fyne.App, client *api.Client, msgContext []int, inputForPrompt string) (api.GenerateResponse, error) {
+	var response api.GenerateResponse
+	req := &api.GenerateRequest{
+		Model: GetActiveModel(guiApp).String(),
+		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
+			inputForPrompt +
+			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
+			"Don't explain you understand the input, just output the result.",
+		// set streaming to false
+		Stream:  new(bool),
+		Context: msgContext,
 	}
 
 	// TODO: implement timeout
