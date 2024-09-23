@@ -2,7 +2,6 @@ package question
 
 import (
 	"fmt"
-	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -12,6 +11,7 @@ import (
 	ollamaApi "github.com/ollama/ollama/api"
 
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/clippy"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 )
 
