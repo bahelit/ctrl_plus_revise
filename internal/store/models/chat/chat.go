@@ -1,9 +1,9 @@
 package chat
 
 import (
-	"bytes"
-	"encoding/binary"
+	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 )
 
@@ -36,34 +36,43 @@ func (c *Chat) SetResponses(responses string) {
 	c.Responses = strings.Split(responses, Separator)
 }
 
-func (c *Chat) ContextToDB() []byte {
-	result := make([]byte, len(c.Context)*4)
-	for i, v := range c.Context {
-		b := make([]byte, 4)
-		binary.LittleEndian.PutUint32(b, uint32(v))
-		copy(result[i*4:], b)
+func IntSliceToString(nums []int) string {
+	return fmt.Sprint(nums)
+}
+
+func StringToIntSlice(s string) ([]int, error) {
+	nums := make([]int, 0, len(stringSplitter(s)))
+	for _, v := range stringSplitter(s) {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, err
+		}
+		nums = append(nums, n)
 	}
-	return result
+	return nums, nil
+}
+
+func stringSplitter(s string) []string {
+	var res []string
+	for _, v := range s {
+		if v == ' ' {
+			continue
+		}
+		res = append(res, string(v))
+	}
+	return res
+}
+
+func (c *Chat) ContextToDB() []byte {
+	stringContext := IntSliceToString(c.Context)
+	return []byte(stringContext[1 : len(stringContext)-1])
 }
 
 func (c *Chat) ContextFromDB(db []byte) {
-	buf := bytes.NewBuffer(db)
-
-	var intArray []int32
-
-	err := binary.Read(buf, binary.LittleEndian, &intArray)
+	ints, err := StringToIntSlice(string(db))
 	if err != nil {
-		slog.Error("Failed to read from db", "error", err)
+		slog.Error("Failed to parse chat's context", "error", err.Error())
 		return
 	}
-
-	c.Context = int32ToInt32Array(intArray)
-}
-
-func int32ToInt32Array(arr []int32) []int {
-	result := make([]int, len(arr))
-	for i, v := range arr {
-		result[i] = int(v)
-	}
-	return result
+	c.Context = ints
 }

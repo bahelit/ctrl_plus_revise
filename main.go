@@ -31,6 +31,7 @@ func main() {
 	slog.Info("Starting Ctr+Revise gui Service...", "Version", version.Version, "Compiler", runtime.Version())
 	guiApp = app.NewWithID("com.ctrlplusrevise.app")
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
+	loadIcon(guiApp)
 
 	var ollamaClient *ollamaApi.Client
 	ollamaClient = ollama.CheckOllamaConnection(guiApp, ollamaClient, nil)
@@ -43,7 +44,6 @@ func main() {
 		sysTray.Show()
 		startupWindow.Show()
 	}
-	loadIcon(guiApp)
 
 	// Start the services
 	hardware.DetectProcessingDevice()

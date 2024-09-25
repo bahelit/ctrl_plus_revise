@@ -61,8 +61,7 @@ func (db *ChatBot) GetAllChats(user string) ([]*chat.Chat, error) {
 		var chatEntry chat.Chat
 		chatEntry.ID = new(int64)
 		chatContext := new([]byte)
-		err = rows.Scan(chatEntry.ID, &chatEntry.Model, chatContext,
-			&chatEntry.Title, &questions, &responses)
+		err = rows.Scan(chatEntry.ID, &chatEntry.Model, chatContext, &chatEntry.Title, &questions, &responses)
 		if err != nil {
 			slog.Error("Failed to scan row", "error", err, "row", rows)
 			return nil, err
@@ -87,7 +86,7 @@ func (db *ChatBot) SaveChat(chatEntry *chat.Chat) error {
 		slog.Error("Failed to begin transaction", "error", err)
 		return err
 	}
-	stmt, err := tx.Prepare("insert into chat(model, context, owner, title, questions, responses) values(?, ?, ?, ?, ?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO chat(model, context, owner, title, questions, responses) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		slog.Error("Failed to prepare statement", "error", err)
 		return err
@@ -123,14 +122,15 @@ func (db *ChatBot) UpdateChat(chatEntry *chat.Chat) error {
 		slog.Error("Failed to begin transaction", "error", err)
 		return err
 	}
-	stmt, err := tx.Prepare("update chat set(context, questions, responses) values(?, ?, ?) where id=?")
+	chatCtx := chatEntry.ContextToDB()
+	stmt, err := tx.Prepare("UPDATE chat SET context = $1, questions = $2, responses = $3 WHERE id=$4")
 	if err != nil {
 		slog.Error("Failed to prepare statement", "error", err)
 		return err
 	}
 	defer stmt.Close()
 
-	result, err := stmt.Exec(chatEntry.ContextToDB(), chatEntry.QuestionsToString(), chatEntry.ResponsesToString(), chatEntry.ID)
+	result, err := stmt.Exec(chatCtx, chatEntry.QuestionsToString(), chatEntry.ResponsesToString(), chatEntry.ID)
 	err = tx.Commit()
 	if err != nil {
 		slog.Error("Failed to commit transaction", "error", err)
@@ -143,6 +143,37 @@ func (db *ChatBot) UpdateChat(chatEntry *chat.Chat) error {
 	}
 	if rowsAffected == 0 {
 		slog.Warn("Chat message not updated", "id", chatEntry.ID)
+		return errors.New("no rows updated")
+	}
+	return nil
+}
+
+func (db *ChatBot) DeleteChat(id int64) error {
+	tx, err := db.SQL.Conn.Begin()
+	if err != nil {
+		slog.Error("Failed to begin transaction", "error", err)
+		return err
+	}
+	stmt, err := tx.Prepare("delete from chat where id=?")
+	if err != nil {
+		slog.Error("Failed to prepare statement", "error", err)
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(id)
+	err = tx.Commit()
+	if err != nil {
+		slog.Error("Failed to commit transaction", "error", err)
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("Failed to get rows affected", "error", err)
+		return err
+	}
+	if rowsAffected == 0 {
+		slog.Warn("Chat message not deleted", "id", id)
 		return errors.New("no rows updated")
 	}
 	return nil

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"fyne.io/fyne/v2/theme"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -27,7 +28,7 @@ func newQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, tabs *con
 		Responses: []string{},
 	}
 
-	submitText := widget.NewLabel("Press Shift + Enter to submit text.")
+	submitText := widget.NewLabel("Press Shift + Enter to submit text 🙈 🙉 🙊")
 	submitText.TextStyle = fyne.TextStyle{Italic: true}
 
 	text := widget.NewMultiLineEntry()
@@ -55,7 +56,7 @@ func newQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, tabs *con
 		return nil
 	}
 
-	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+	submitQuestionsButton := widget.NewButton("Submit", func() {
 		slog.Debug("Question submitted", "text", text.Text)
 		err := text.Validate()
 		if err != nil {
@@ -66,7 +67,7 @@ func newQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, tabs *con
 		text.SetText("")
 	})
 
-	questionWindow := container.NewBorder(submitText, submitQuestionsButton, nil, nil, text)
+	questionWindow := container.NewBorder(submitText, container.NewPadded(submitQuestionsButton), nil, nil, text)
 	return questionWindow
 }
 
@@ -107,7 +108,7 @@ func submitNewQuestion(dbClient *database.ChatBot, guiApp fyne.App, ollamaClient
 	yakityYak = nil
 }
 
-func chatQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, entries *fyne.Container, scroll *container.Scroll, ollamaClient *ollamaApi.Client, yakity chat.Chat) *fyne.Container {
+func chatQuestionContainer(ollamaClient *ollamaApi.Client, dbClient *database.ChatBot, guiApp fyne.App, entries *fyne.Container, scroll *container.Scroll, yakity chat.Chat, widgyCard *widget.Card) *fyne.Container {
 	slog.Debug("Chatting Question")
 
 	text := widget.NewMultiLineEntry()
@@ -122,7 +123,7 @@ func chatQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, entries 
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		submitQuestionToChat(guiApp, err, ollamaClient, dbClient, &yakity, text, entries, s)
+		submitQuestionToChat(guiApp, ollamaClient, dbClient, &yakity, text, entries, s)
 		text.SetText("")
 		scroll.ScrollToBottom()
 	}
@@ -136,26 +137,50 @@ func chatQuestionContainer(dbClient *database.ChatBot, guiApp fyne.App, entries 
 		return nil
 	}
 
-	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+	submitQuestionsButton := widget.NewButton("Submit", func() {
 		slog.Debug("Question submitted", "text", text.Text)
 		err := text.Validate()
 		if err != nil {
 			slog.Error("Error validating question", "error", err)
 			return
 		}
-		submitQuestionToChat(guiApp, err, ollamaClient, dbClient, &yakity, text, entries, text.Text)
+		submitQuestionToChat(guiApp, ollamaClient, dbClient, &yakity, text, entries, text.Text)
 		text.SetText("")
 		scroll.ScrollToBottom()
 	})
+	submitQuestionsButton.Importance = widget.HighImportance
 
-	questionWindow := container.NewBorder(nil, submitQuestionsButton, nil, nil, text)
+	reformatButton := widget.NewButton("List", func() {
+		prompt := "Turn that into a bulleted list summarizing its main points, no need to explain your list, just provide the main points in a list format"
+		slog.Debug("Reformat submitted")
+		slog.Info("yakity", "context", yakity.Context)
+		submitQuestionToChat(guiApp, ollamaClient, dbClient, &yakity, text, entries, prompt)
+		text.SetText("")
+		scroll.ScrollToBottom()
+	})
+	reformatButton.Importance = widget.MediumImportance
+	reformatButton.SetIcon(theme.ListIcon())
+
+	deleteChat := widget.NewButton("Delete Chat", func() {
+		err := dbClient.DeleteChat(*yakity.ID)
+		if err != nil {
+			slog.Error("Failed to delete chat", "error", err)
+		}
+		entries.Remove(widgyCard)
+	})
+	deleteChat.Importance = widget.DangerImportance
+	deleteChat.SetIcon(theme.DeleteIcon())
+	buttons := container.NewHBox(container.NewPadded(submitQuestionsButton), container.NewPadded(reformatButton), container.NewPadded(deleteChat))
+
+	questionWindow := container.NewBorder(nil, buttons, nil, nil, text)
 	return questionWindow
 }
 
-func submitQuestionToChat(guiApp fyne.App, err error, ollamaClient *ollamaApi.Client, dbClient *database.ChatBot, yakity *chat.Chat, text *widget.Entry, entries *fyne.Container, questionFromUser string) {
+func submitQuestionToChat(guiApp fyne.App, ollamaClient *ollamaApi.Client, dbClient *database.ChatBot, yakity *chat.Chat, text *widget.Entry, entries *fyne.Container, questionFromUser string) {
 	loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg,
 		"Asking question...")
 	loadingScreen.Show()
+	// TODO: The context being pulled from the DB does not work.
 	response, err := ollama.AskAIWithContext(guiApp, ollamaClient, yakity.Context, questionFromUser)
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
@@ -167,7 +192,7 @@ func submitQuestionToChat(guiApp fyne.App, err error, ollamaClient *ollamaApi.Cl
 	if dbClient != nil {
 		err = dbClient.UpdateChat(yakity)
 		if err != nil {
-			slog.Error("Failed to save new chat", "error", err)
+			slog.Error("Failed to update chat", "error", err)
 		}
 	} else {
 		slog.Warn("Failed to save new chat", "error", err)

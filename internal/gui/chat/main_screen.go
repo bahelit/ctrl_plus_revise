@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"github.com/bahelit/ctrl_plus_revise/internal/data"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -48,12 +49,8 @@ func ConversationManager(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	w := guiApp.NewWindow("Ctrl+Revise Private Chatbot")
 	w.Resize(fyne.NewSize(screenWidth, screenHeight))
 
-	//hello := widget.NewLabel("This conversation is between us 🙈 🙉 🙊")
-	//hello.TextStyle = fyne.TextStyle{Bold: true}
-	//hello.Alignment = fyne.TextAlignCenter
-
 	mainEntry := createNewChatEntry(dbClient, guiApp, verticalTabs, ollamaClient)
-	startChatTab := container.NewTabItem("Home", mainEntry)
+	startChatTab := container.NewTabItem("New Chat", mainEntry)
 	verticalTabs.SetItems([]*container.TabItem{startChatTab})
 
 	if dbClient != nil {
@@ -88,11 +85,13 @@ func createNewChatEntry(dbClient *database.ChatBot, guiApp fyne.App, tabs *conta
 		guiApp.Preferences().SetInt(config.CurrentChatModelKey, int(selectedModel))
 		guiApp.Preferences().SetInt(config.CurrentModelKey, int(selectedModel))
 	})
-	model := container.NewVBox(chatBotSelection, container.NewCenter(saveDefaultModelButton))
+	modelText := widget.NewLabel("Select Model Used for Chat")
+	modelText.Alignment = fyne.TextAlignCenter
+	model := container.NewVBox(modelText, chatBotSelection, container.NewCenter(saveDefaultModelButton))
 
 	questionContainer := newQuestionContainer(dbClient, guiApp, tabs, ollamaClient, selectedModel)
 
-	logo := canvas.NewImageFromResource(guiApp.Icon())
+	logo := canvas.NewImageFromResource(data.LogoPNG)
 	logo.FillMode = canvas.ImageFillOriginal
 	if fyne.CurrentDevice().IsMobile() {
 		logo.SetMinSize(fyne.NewSize(192, 192))
@@ -123,7 +122,7 @@ func createChatEntry(dbClient *database.ChatBot, guiApp fyne.App, ollamaClient *
 	}
 
 	allChats := container.NewVScroll(entries)
-	questionContainer := chatQuestionContainer(dbClient, guiApp, entries, allChats, ollamaClient, chatEntry)
+	questionContainer := chatQuestionContainer(ollamaClient, dbClient, guiApp, entries, allChats, chatEntry, widgyCard)
 
 	chatLayout := container.NewBorder(
 		chatHeader,

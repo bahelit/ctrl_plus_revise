@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	ollamaApi "github.com/ollama/ollama/api"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/data"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/bindings"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/chat"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/food"
@@ -76,21 +77,28 @@ func setupTrayWindowContent(guiApp fyne.App, ollamaClient *ollamaApi.Client, sys
 	askQuestionsButton := widget.NewButton("Ask a Question", func() {
 		question.AskQuestionWindow(guiApp, ollamaClient)
 	})
+	askQuestionsButton.Importance = widget.HighImportance
+
 	chatButton := widget.NewButton("Chat with AI", func() {
 		chat.ConversationManager(guiApp, ollamaClient)
 	})
+	chatButton.Importance = widget.HighImportance
+
 	recipeButton := widget.NewButton("Meal Planner", func() {
 		food.MealPlanner(guiApp, ollamaClient)
 	})
+	recipeButton.Importance = widget.HighImportance
+
 	translatorButton := widget.NewButton("Translate Text", func() {
 		translator.TranslateText(guiApp, ollamaClient)
 	})
+	translatorButton.Importance = widget.HighImportance
 
 	buttons := container.NewVBox(
-		askQuestionsButton,
-		chatButton,
-		recipeButton,
-		translatorButton,
+		container.NewPadded(askQuestionsButton),
+		container.NewPadded(chatButton),
+		container.NewPadded(recipeButton),
+		container.NewPadded(translatorButton),
 	)
 	footer := footer()
 	sysTray.SetContent(container.NewBorder(welcomeText, footer, nil, nil, buttons))
@@ -118,22 +126,8 @@ func parseURL(urlStr string) *url.URL {
 	return link
 }
 
-// TODO: Embed icon in binary
 func loadIcon(guiApp fyne.App) {
-	var (
-		icon         fyne.Resource
-		errLocation1 error
-		errLocation2 error
-	)
-	icon, errLocation1 = fyne.LoadResourceFromPath("/app/share/icons/hicolor/256x256/apps/com.bahelit.ctrl_plus_revise.png")
-	if errLocation1 != nil {
-		icon, errLocation2 = fyne.LoadResourceFromPath("images/icon.png")
-		if errLocation2 != nil {
-			slog.Warn("Failed to load icon", "error", errLocation1)
-			slog.Warn("Failed to load icon", "error", errLocation2)
-		}
-	}
-	guiApp.SetIcon(icon)
+	guiApp.SetIcon(data.LogoPNG)
 }
 
 func mainWindowText() *fyne.Container {

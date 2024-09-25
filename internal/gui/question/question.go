@@ -63,7 +63,7 @@ func AskQuestionWindow(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 		return nil
 	}
 
-	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+	submitQuestionsButton := widget.NewButton("Submit", func() {
 		slog.Debug("Question submitted", "text", text.Text)
 		err := text.Validate()
 		if err != nil {
@@ -87,7 +87,7 @@ func AskQuestionWindow(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	topText := container.NewHBox(label1, label2)
 	questionLayout := layout.NewResponsiveLayout(topText)
 	buttonLayout := layout.NewResponsiveLayout(layout.Responsive(submitQuestionsButton))
-	questionWindow := container.NewBorder(questionLayout, buttonLayout, nil, nil, text)
+	questionWindow := container.NewBorder(questionLayout, container.NewPadded(buttonLayout), nil, nil, text)
 	question.SetContent(container.NewVScroll(questionWindow))
 	question.Canvas().Focus(text)
 	question.Show()
@@ -135,7 +135,7 @@ func AskQuestionContainer(guiApp fyne.App, tabs *container.AppTabs, ollamaClient
 		return nil
 	}
 
-	submitQuestionsButton := widget.NewButton("Submit Question", func() {
+	submitQuestionsButton := widget.NewButton("Submit", func() {
 		slog.Debug("Question submitted", "text", text.Text)
 		err := text.Validate()
 		if err != nil {

@@ -1,7 +1,7 @@
 <div align="center">
   <p>
       <a href="https://github.com/bahelit/images/icon.png">
-        <img src="images/icon.png" alt="Ctrl+Revise"/>
+        <img src="internal/data/assets/icon.png" alt="Ctrl+Revise"/>
       </a>
       <br />
   </p>

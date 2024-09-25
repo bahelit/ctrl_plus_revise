@@ -240,7 +240,11 @@ func MealPlanner(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	})
 	budgetFriendlyGroceryList.Importance = widget.SuccessImportance
 
-	action := container.NewHBox(suggest, groceryList, suggestPrep, budgetFriendlyGroceryList)
+	action := container.NewHBox(
+		container.NewPadded(suggest),
+		container.NewPadded(groceryList),
+		container.NewPadded(suggestPrep),
+		container.NewPadded(budgetFriendlyGroceryList))
 	action.Layout = layout.NewAdaptiveGridLayout(2)
 
 	boarderLayout := container.NewBorder(nil, action, nil, nil, verticalTabs)
