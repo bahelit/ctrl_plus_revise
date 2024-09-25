@@ -155,7 +155,7 @@ Contributions are welcome and will be fully credited.
 * [X] Custom keyboard shortcuts
 * [X] Settings menu for Ollama connection
 * [X] Improve model management - Download and update modals from the settings
-* [ ] Chatbot and chat history (chat with an AI and save the chat history)
+* [X] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
 * [ ] Create Snap package
