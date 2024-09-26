@@ -1,4 +1,4 @@
-package main
+package ollama
 
 import (
 	"context"
@@ -17,13 +17,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	ollamaApi "github.com/ollama/ollama/api"
 
+	"github.com/bahelit/ctrl_plus_revise/internal/config"
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
-	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 )
 
-//nolint:funlen // refactor later
-func installOrUpdateOllamaWindow(guiApp fyne.App) {
+func InstallOrUpdateOllamaWindow(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	slog.Debug("Asking Question")
 	var (
 		screenHeight float32 = 480.0
@@ -33,7 +33,7 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 	ollamaManagerWindow := guiApp.NewWindow("Ctrl+Revise Ollama Manager")
 	ollamaManagerWindow.Resize(fyne.NewSize(screenWidth, screenHeight))
 
-	ollamaURL := guiApp.Preferences().StringWithFallback(OllamaURLKey, "http://localhost:11434")
+	ollamaURL := guiApp.Preferences().StringWithFallback(config.OllamaURLKey, "http://localhost:11434")
 	urlOverride := os.Getenv("OLLAMA_HOST")
 	if urlOverride != "" {
 		ollamaURL = urlOverride
@@ -68,8 +68,8 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 			slog.Error("Invalid URL", "error", err)
 			return
 		}
-		connected := checkOllamaConnection(&s)
-		if connected {
+		ollamaClient := CheckOllamaConnection(guiApp, ollamaClient, &s)
+		if ollamaClient != nil {
 			w := guiApp.NewWindow("Successfully Connected")
 			msg := widget.NewLabel("Successfully Connected to Ollama")
 			msg.TextStyle = fyne.TextStyle{Bold: true}
@@ -95,12 +95,12 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 		if b {
 			ollamaURLEntry.Show()
 			urlNote.Show()
-			guiApp.Preferences().SetBool(UseRemoteOllamaKey, true)
+			guiApp.Preferences().SetBool(config.UseRemoteOllamaKey, true)
 			slog.Debug("Show Pop-Up is on")
 		} else {
 			ollamaURLEntry.Hide()
 			urlNote.Hide()
-			guiApp.Preferences().SetBool(UseRemoteOllamaKey, false)
+			guiApp.Preferences().SetBool(config.UseRemoteOllamaKey, false)
 			slog.Debug("Show Pop-Up is off")
 		}
 		ollamaURLEntry.Refresh()
@@ -122,7 +122,7 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 
 	var err error
 	fetchOllama := widget.NewButton("Download or Update Ollama", func() {
-		err = installOrUpdateOllama()
+		err = installOrUpdateOllama(guiApp, ollamaClient)
 		if err != nil {
 			guiApp.SendNotification(&fyne.Notification{
 				Title:   "Ollama Installation Error",
@@ -137,7 +137,7 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 	})
 
 	dockerMsg := widget.NewLabel("Docker is enabled")
-	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
+	useDocker := guiApp.Preferences().BoolWithFallback(config.UseDockerKey, false)
 	if useDocker {
 		dockerMsg.Hide()
 	}
@@ -150,12 +150,12 @@ func installOrUpdateOllamaWindow(guiApp fyne.App) {
 
 }
 
-func installOrUpdateOllama() error {
+func installOrUpdateOllama(guiApp fyne.App, ollamaClient *ollamaApi.Client) error {
 	slog.Info("Installing Ollama")
-	useDocker := guiApp.Preferences().BoolWithFallback(UseDockerKey, false)
+	useDocker := guiApp.Preferences().BoolWithFallback(config.UseDockerKey, false)
 	if useDocker {
-		connectedToOllama := checkOllamaConnection(nil)
-		if connectedToOllama {
+		ollamaClient = CheckOllamaConnection(guiApp, ollamaClient, nil)
+		if ollamaClient != nil {
 			slog.Info("Docker container update not yet implemented")
 			return nil
 		}
@@ -247,7 +247,7 @@ func installOllamaWindows() error {
 }
 
 func remoteOllamaCheckbox(guiApp fyne.App) *widget.Check {
-	showPopUp := guiApp.Preferences().BoolWithFallback(UseRemoteOllamaKey, false)
+	showPopUp := guiApp.Preferences().BoolWithFallback(config.UseRemoteOllamaKey, false)
 	popup := widget.NewCheck("Connect to Ollama server", func(b bool) {
 		if !b {
 			slog.Debug("Not using remote server connection")
@@ -259,19 +259,19 @@ func remoteOllamaCheckbox(guiApp fyne.App) *widget.Check {
 	return popup
 }
 
-func checkOllamaConnection(ollamaURL *string) bool {
+func CheckOllamaConnection(guiApp fyne.App, ollamaClient *ollamaApi.Client, ollamaURL *string) *ollamaApi.Client {
 	heartBeatCtx, heartBeatCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer heartBeatCancel()
 	// Start communication with the AI
 	if ollamaURL != nil {
-		ollamaClient = ollama.ConnectToOllamaWithURL(*ollamaURL)
+		ollamaClient = ConnectToOllamaWithURL(*ollamaURL)
 	} else {
-		ollamaClient = ollama.ConnectToOllama()
+		ollamaClient = ConnectToOllama()
 	}
 	err := ollamaClient.Heartbeat(heartBeatCtx)
 	if err == nil {
 		slog.Info("Connected to Ollama")
-		return true
+		return ollamaClient
 	}
 	if <-heartBeatCtx.Done(); true {
 		guiApp.SendNotification(&fyne.Notification{
@@ -279,5 +279,5 @@ func checkOllamaConnection(ollamaURL *string) bool {
 			Content: "Timed out trying to connect to Ollama."})
 		slog.Error("timed out connecting to Ollama")
 	}
-	return false
+	return nil
 }

@@ -1,7 +1,7 @@
 <div align="center">
   <p>
       <a href="https://github.com/bahelit/images/icon.png">
-        <img src="images/icon.png" alt="Ctrl+Revise"/>
+        <img src="internal/data/assets/icon.png" alt="Ctrl+Revise"/>
       </a>
       <br />
   </p>
@@ -30,16 +30,8 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 - **Expand text**: Expands text to provide more details.
 - **Explain text**: Explains complex topics in simple terms.
 - **Create Lists**: Creates bullet points and numbered lists from blocks of text.
-- **Text reader**: Reads the highlighted text for visually impaired users.
 - **Audio feedback**: Provides audio feedback for the suggestions made by the AI models.
-- **Screen reader support**: Supports reading the highlighted text for visually impaired users.
 - **Cross-platform compatibility**: Compatible with Windows, Linux, and macOS, supporting AMD, Nvidia, and Apple M1 chip architectures.
-
-> [!CAUTION]
-> The use of the Speak feature and text reader currently sends the text to a third-party (Google Translate) for processing.
-
-> [!NOTE]
-> The Speak feature and text reader are disabled by default and can be enabled in the settings.
 
 ## Getting Started
 
@@ -163,7 +155,7 @@ Contributions are welcome and will be fully credited.
 * [X] Custom keyboard shortcuts
 * [X] Settings menu for Ollama connection
 * [X] Improve model management - Download and update modals from the settings
-* [ ] Chatbot and chat history (chat with an AI and save the chat history)
+* [X] Chatbot and chat history (chat with an AI and save the chat history)
 * [ ] Clipboard not working in flatpak even though it works native in Wayland
 * [ ] Create AppImage package
 * [ ] Create Snap package

@@ -10,85 +10,80 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/x/fyne/theme"
 	ollamaApi "github.com/ollama/ollama/api"
-	hook "github.com/robotn/gohook"
 
-	"github.com/bahelit/ctrl_plus_revise/internal/gui"
+	"github.com/bahelit/ctrl_plus_revise/internal/config"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/settings"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
 	"github.com/bahelit/ctrl_plus_revise/internal/hardware"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/version"
 )
 
-// TODO: Refactor to remove some global variables
 var (
-	ollamaClient           *ollamaApi.Client
-	selectedModel          = ollama.Llama3
-	selectedPrompt         = ollama.CorrectGrammar
-	selectedModelBinding   = binding.NewInt()
-	translationFromBinding = binding.NewString()
-	translationToBinding   = binding.NewString()
-	selectedPromptBinding  = binding.NewString()
-	guiApp                 fyne.App
-	systemHook             chan hook.Event
-	ollamaPID              int
-	stopOllamaOnShutDown   = false
+	guiApp               fyne.App
+	stopOllamaOnShutDown = false
 )
 
 func main() {
 	slog.Info("Starting Ctr+Revise gui Service...", "Version", version.Version, "Compiler", runtime.Version())
 	guiApp = app.NewWithID("com.ctrlplusrevise.app")
 	guiApp.Settings().SetTheme(theme.AdwaitaTheme())
+	loadIcon(guiApp)
+
+	var ollamaClient *ollamaApi.Client
+	ollamaClient = ollama.CheckOllamaConnection(guiApp, ollamaClient, nil)
 
 	// Prepare the loading screen and system tray
-	startupWindow := gui.StartupScreen(guiApp)
-	sysTray := SetupSysTray(guiApp)
-	if guiApp.Preferences().BoolWithFallback(ShowStartWindowKey, true) {
+	startupWindow := loading.StartupScreen(guiApp)
+	sysTray := SetupSysTray(guiApp, ollamaClient)
+	if guiApp.Preferences().BoolWithFallback(config.ShowStartWindowKey, true) {
 		slog.Debug("Hiding start window")
 		sysTray.Show()
 		startupWindow.Show()
 	}
-	loadIcon(guiApp)
 
 	// Start the services
 	hardware.DetectProcessingDevice()
 	hardware.DetectMemory()
 	go func() {
-		connectedToOllama := setupServices()
-		if !connectedToOllama {
-			slog.Error("Failed to connect to Ollama")
-			installOrUpdateOllamaWindow(guiApp)
+		if ollamaClient == nil {
+			ollamaClient = settings.SetupServices(guiApp, ollamaClient)
+			if ollamaClient == nil {
+				slog.Error("Failed to connect to Ollama")
+				ollama.InstallOrUpdateOllamaWindow(guiApp, ollamaClient)
+			}
 		}
-		fetchModel()
+		fetchModel(ollamaClient)
 		time.Sleep(1 * time.Second)
 		startupWindow.Close()
 	}()
 
-	sayHello()
+	//sayHello()
 
 	// Listen for global hotkeys
 	setKeyboardShortcuts()
 	go func() {
-		startKeyboardListener()
+		shortcuts.StartKeyboardListener(guiApp, ollamaClient)
 	}()
-	initSpeech()
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func(p int) {
+	go func() {
 		<-c
 		slog.Info("Received shutdown signal")
-		handleShutdown(p)
+		handleShutdown(nil)
 		os.Exit(0)
-	}(ollamaPID)
-	defer func(p int) {
+	}()
+	defer func() {
 		slog.Info("Shutting down")
 		signal.Stop(c)
 		close(c)
-		handleShutdown(p)
-	}(ollamaPID)
+		handleShutdown(nil)
+	}()
 
 	slog.Info("Ctrl+Revise is ready to help you!")
 	// Run the gui event loop

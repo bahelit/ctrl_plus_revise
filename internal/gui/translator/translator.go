@@ -1,7 +1,9 @@
-package main
+package translator
 
 import (
 	"fmt"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/settings"
 	"log/slog"
 	"time"
 
@@ -10,12 +12,15 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/bahelit/ctrl_plus_revise/internal/gui"
+	ollamaApi "github.com/ollama/ollama/api"
+
+	"github.com/bahelit/ctrl_plus_revise/internal/config"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 	"github.com/bahelit/ctrl_plus_revise/pkg/clipboard"
 )
 
-func translateText(guiApp fyne.App) {
+func TranslateText(guiApp fyne.App, ollamaClient *ollamaApi.Client) {
 	slog.Debug("Asking Question")
 	var (
 		screenHeight float32 = 480.0
@@ -27,8 +32,8 @@ func translateText(guiApp fyne.App) {
 	var (
 		from         = widget.NewMultiLineEntry()
 		to           = widget.NewMultiLineEntry()
-		fromDropdown = selectTranslationFromDropDown()
-		toDropdown   = selectTranslationToDropDown()
+		fromDropdown = settings.SelectTranslationFromDropDown(guiApp)
+		toDropdown   = settings.SelectTranslationToDropDown(guiApp)
 	)
 
 	to.Wrapping = fyne.TextWrapWord
@@ -47,7 +52,7 @@ func translateText(guiApp fyne.App) {
 				slog.Warn("text validating failed for translation", "error", err)
 				return
 			}
-			handleTranslateRequest(from, to)
+			handleTranslateRequest(guiApp, ollamaClient, from, to)
 			translator.Canvas().Focus(from)
 		})
 	}
@@ -77,26 +82,24 @@ func translateText(guiApp fyne.App) {
 
 }
 
-func handleTranslateRequest(from, to *widget.Entry) {
-	err := th.Do()
+func handleTranslateRequest(guiApp fyne.App, ollamaClient *ollamaApi.Client, from, to *widget.Entry) {
+	err := shortcuts.Throttle.Do()
 	if err != nil {
 		slog.Error("Failed to create throttle", "error", err)
 	}
 	defer func() {
 		slog.Debug("Done translating")
-		th.Done(err)
+		shortcuts.Throttle.Done(err)
 	}()
 
-	fromLang := guiApp.Preferences().StringWithFallback(CurrentFromLangKey, string(ollama.English))
-	toLang := guiApp.Preferences().StringWithFallback(CurrentToLangKey, string(ollama.Spanish))
+	fromLang := guiApp.Preferences().StringWithFallback(config.CurrentFromLangKey, string(ollama.English))
+	toLang := guiApp.Preferences().StringWithFallback(config.CurrentToLangKey, string(ollama.Spanish))
 
-	model := guiApp.Preferences().IntWithFallback(CurrentModelKey, int(ollama.Llama3Dot1))
-	loadingScreen := gui.LoadingScreenWithMessage(guiApp, thinkingMsg,
-		"Translating with model: "+ollama.ModelName(model).String()+"...")
+	loadingScreen := loading.LoadingScreenWithMessageAddModel(guiApp, loading.ThinkingMsg, "Translating text")
 	loadingScreen.Show()
 
 	slog.Debug("Translating text", "fromLang", fromLang, "toLang", toLang)
-	generated, err := ollama.AskAIToTranslate(ollamaClient, ollama.ModelName(model), from.Text, ollama.Language(fromLang), ollama.Language(toLang))
+	generated, err := ollama.AskAIToTranslate(guiApp, ollamaClient, from.Text, ollama.Language(fromLang), ollama.Language(toLang))
 	if err != nil {
 		slog.Error("Failed to ask AI", "error", err)
 		loadingScreen.Hide()
