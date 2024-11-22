@@ -22,7 +22,7 @@ var (
 )
 
 func SetBindingVariables(guiApp fyne.App) error {
-	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot1))
+	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot2))
 	err := SelectedModelBinding.Set(model)
 	if err != nil {
 		slog.Error("Failed to set SelectedModelBinding", "error", err)

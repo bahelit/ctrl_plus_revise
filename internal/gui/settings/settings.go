@@ -448,7 +448,10 @@ func selectCopyActionDropDown(guiApp fyne.App) *widget.Select {
 //nolint:gocyclo // it's a GUI function
 func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 	var (
-		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String() + " (Default)"
+		llama3Dot2      = "Llama 3.2 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot2].String() + " (Default)"
+		llama3Dot21B    = "Llama 3.2 1B - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot21B].String()
+		llama3Dot1      = "Llama 3.1 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3Dot1].String()
+		llamaVision     = "Llama 3.2 Vision - RAM Usage: " + ollama.MemoryUsage[ollama.LlamaVision].String()
 		llama3          = "Llama 3 - RAM Usage: " + ollama.MemoryUsage[ollama.Llama3].String()
 		codeLlama       = "CodeLlama - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama].String()
 		codeLlama13b    = "CodeLlama 13b - RAM Usage: " + ollama.MemoryUsage[ollama.CodeLlama13b].String()
@@ -460,10 +463,15 @@ func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 		gemma2          = "Gemma2 - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma2].String()
 		gemma22B        = "Gemma2 2B - RAM Usage: " + ollama.MemoryUsage[ollama.Gemma22B].String()
 		mistral         = "Mistral - RAM Usage: " + ollama.MemoryUsage[ollama.Mistral].String()
+		mistralNemo     = "Mistral Nemo - RAM Usage: " + ollama.MemoryUsage[ollama.MistralNemo].String()
+		nemoTronMini    = "Nemotron Mini - RAM Usage: " + ollama.MemoryUsage[ollama.MistralNemo].String()
 		phi3            = "Phi3 - RAM Usage: " + ollama.MemoryUsage[ollama.Phi3].String()
 	)
 	var itemAndText = map[ollama.ModelName]string{
+		ollama.Llama3Dot2:      llama3Dot2,
+		ollama.Llama3Dot21B:    llama3Dot21B,
 		ollama.Llama3Dot1:      llama3Dot1,
+		ollama.LlamaVision:     llamaVision,
 		ollama.Llama3:          llama3,
 		ollama.CodeLlama:       codeLlama,
 		ollama.CodeLlama13b:    codeLlama13b,
@@ -475,11 +483,16 @@ func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 		ollama.Gemma2:          gemma2,
 		ollama.Gemma22B:        gemma22B,
 		ollama.Mistral:         mistral,
+		ollama.MistralNemo:     mistralNemo,
+		ollama.NemoTronMini:    nemoTronMini,
 		ollama.Phi3:            phi3,
 	}
 	combo := widget.NewSelect([]string{
 		llama3Dot1,
+		llama3Dot2,
+		llama3Dot21B,
 		llama3,
+		llamaVision,
 		codeLlama,
 		codeLlama13b,
 		codeGemma,
@@ -489,12 +502,20 @@ func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 		gemma2b,
 		gemma2,
 		mistral,
+		mistralNemo,
+		nemoTronMini,
 		phi3},
 		func(value string) {
 			var selectedModel ollama.ModelName
 			switch value {
 			case llama3Dot1:
 				selectedModel = ollama.Llama3Dot1
+			case llama3Dot2:
+				selectedModel = ollama.Llama3Dot2
+			case llama3Dot21B:
+				selectedModel = ollama.Llama3Dot21B
+			case llamaVision:
+				selectedModel = ollama.LlamaVision
 			case llama3:
 				selectedModel = ollama.Llama3
 			case codeLlama:
@@ -517,6 +538,10 @@ func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 				selectedModel = ollama.Gemma22B
 			case mistral:
 				selectedModel = ollama.Mistral
+			case mistralNemo:
+				selectedModel = ollama.MistralNemo
+			case nemoTronMini:
+				selectedModel = ollama.NemoTronMini
 			case phi3:
 				selectedModel = ollama.Phi3
 			default:
@@ -529,7 +554,7 @@ func SelectAIModelDropDown(guiApp fyne.App) *widget.Select {
 			}
 			slog.Debug("Selected model", "model", selectedModel)
 		})
-	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot1))
+	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot2))
 	selection := itemAndText[ollama.ModelName(model)]
 	slog.Debug("Selected model", "model", selection)
 	combo.SetSelected(selection)

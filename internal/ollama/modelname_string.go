@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[Llama3Dot1-0]
+	_ = x[Llama3Dot2-0]
 	_ = x[CodeLlama-1]
 	_ = x[CodeLlama13b-2]
 	_ = x[CodeGemma-3]
@@ -18,15 +18,20 @@ func _() {
 	_ = x[Gemma2b-7]
 	_ = x[Gemma2-8]
 	_ = x[Gemma22B-9]
-	_ = x[Llama3-10]
-	_ = x[Llava-11]
-	_ = x[Mistral-12]
-	_ = x[Phi3-13]
+	_ = x[LlamaVision-10]
+	_ = x[Llama3Dot1-11]
+	_ = x[Llama3Dot21B-12]
+	_ = x[Llama3-13]
+	_ = x[Llava-14]
+	_ = x[Mistral-15]
+	_ = x[MistralNemo-16]
+	_ = x[NemoTronMini-17]
+	_ = x[Phi3-18]
 }
 
-const _ModelName_name = "llama3.1:latestcodellama:latestcodellama:13bcodegemma:7bdeepseek-coder:latestdeepseek-coder-v2:latestgemma:latestgemma:2bgemma2:latestgemma2:2bllama3:latestllava:latestmistral:latestphi3:latest"
+const _ModelName_name = "llama3.2:latestcodellama:latestcodellama:13bcodegemma:7bdeepseek-coder:latestdeepseek-coder-v2:latestgemma:latestgemma:2bgemma2:latestgemma2:2bllama3.2-vision:latestllama3.1:latestllama3.2:1bllama3:latestllava:latestmistral:latestmistral-nemo:latestnemotron-mini:latestphi3:latest"
 
-var _ModelName_index = [...]uint8{0, 15, 31, 44, 56, 77, 101, 113, 121, 134, 143, 156, 168, 182, 193}
+var _ModelName_index = [...]uint16{0, 15, 31, 44, 56, 77, 101, 113, 121, 134, 143, 165, 180, 191, 204, 216, 230, 249, 269, 280}
 
 func (i ModelName) String() string {
 	if i < 0 || i >= ModelName(len(_ModelName_index)-1) {

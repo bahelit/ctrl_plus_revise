@@ -15,7 +15,7 @@ import (
 type ModelName int
 
 const (
-	Llama3Dot1      ModelName = iota // llama3.1:latest
+	Llama3Dot2      ModelName = iota // llama3.2:latest
 	CodeLlama                        // codellama:latest
 	CodeLlama13b                     // codellama:13b
 	CodeGemma                        // codegemma:7b
@@ -25,9 +25,14 @@ const (
 	Gemma2b                          // gemma:2b
 	Gemma2                           // gemma2:latest
 	Gemma22B                         // gemma2:2b
+	LlamaVision                      // llama3.2-vision:latest
+	Llama3Dot1                       // llama3.1:latest
+	Llama3Dot21B                     // llama3.2:1b
 	Llama3                           // llama3:latest
 	Llava                            // llava:latest
 	Mistral                          // mistral:latest
+	MistralNemo                      // mistral-nemo:latest
+	NemoTronMini                     // nemotron-mini:latest
 	Phi3                             // phi3:latest
 )
 
@@ -42,9 +47,14 @@ var MemoryUsage = map[ModelName]bytesize.ByteSize{
 	Gemma2b:         2321 * bytesize.MB,
 	Gemma2:          6683 * bytesize.MB,
 	Gemma22B:        2321 * bytesize.MB,
+	LlamaVision:     9980 * bytesize.MB, // TODO - get the actual size
 	Llama3:          4980 * bytesize.MB,
 	Llama3Dot1:      6354 * bytesize.MB,
+	Llama3Dot2:      6354 * bytesize.MB,
+	Llama3Dot21B:    1354 * bytesize.MB, // TODO - get the actual size
 	Mistral:         4615 * bytesize.MB,
+	MistralNemo:     9615 * bytesize.MB, // TODO - get the actual size
+	NemoTronMini:    4615 * bytesize.MB, // TODO - get the actual size
 	Phi3:            3269 * bytesize.MB,
 }
 
@@ -150,7 +160,7 @@ func (prompt PromptMsg) PromptExtraToText() string {
 }
 
 func GetActiveModel(guiApp fyne.App) ModelName {
-	return ModelName(guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(Llama3Dot1)))
+	return ModelName(guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(Llama3Dot2)))
 }
 
 func StringToModel(s string) ModelName {

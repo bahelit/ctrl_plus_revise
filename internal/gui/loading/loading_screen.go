@@ -38,7 +38,7 @@ func LoadingScreenWithMessage(guiApp fyne.App, title, msg string) fyne.Window {
 }
 
 func LoadingScreenWithMessageAddModel(guiApp fyne.App, title, msg string) fyne.Window {
-	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot1))
+	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot2))
 	modelMsg := "\nUsing model: " + ollama.ModelName(model).String() + "..."
 	title += modelMsg
 	loadingScreen := guiApp.NewWindow(title)
