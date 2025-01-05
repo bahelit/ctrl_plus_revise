@@ -11,7 +11,7 @@
 
 # Ctrl+Revise
 
-Ctrl+Revise is an AI tool uses keyboard shortcuts that when pressed has an AI agent act on the text that is currently selected (highlighted) and the response replaces the highlighted text if writable and is added to the clipboard to be pasted elsewhere.
+Ctrl+Revise is an AI tool that uses keyboard shortcuts to interact with a local AI agent based on the text that is currently selected (highlighted). The response from the AI agent replaces the highlighted text if writable and is added to the clipboard to be pasted elsewhere.
 
 The AI models run locally on your machine, ensuring your privacy and data security.
 
@@ -43,11 +43,11 @@ Compatible with Windows, Linux, and MacOS, supporting AMD, Nvidia, and Apple M s
 #### Ollama
 - [Ollama](https://ollama.com/)
 
-Ollama is a tool for interacting with various Large-Language-Models. It is used to interact with the AI models.
+Ollama is a tool for interacting with various Large-Language-Models. It is used to manage and interact with the AI models.
 
-Ctrl+Revise will download and install the latest release Ollama with the click of a button.
+Ctrl+Revise can and install the latest release Ollama with the click of a button.
 
-You can manually download the latest release from the [Ollama.com](https://ollama.com/download) website.
+Ollama can also be manually downloaded from the [Ollama.com](https://ollama.com/download) website.
 
 ##### Windows
 Windows users can install [Ollama.com](https://ollama.com/download) from the official website.
@@ -57,6 +57,11 @@ MacOS users can install Ollama from Homebrew.
 ```bash
 brew install ollama
 ```
+
+
+##### Ubuntu Linux
+Ubuntu users can install Ollama as a [Snap pacakge](https://snapcraft.io/ollama).
+`sudo snap install ollama`
 
 ##### Arch Linux
 Arch Linux users can install Ollama from the official repository.
@@ -71,15 +76,6 @@ the environment variable `OLLAMA_HOST` to the address of the machine running Oll
 ```bash
 export OLLAMA_HOST=http://<host-IP>:11434
 ```
-
-#### Docker (optional)
-If users select to use [Docker](https://docker.com) to run Ollama, Ctrl+Revise will pull the latest Ollama Docker image and manage running it.
-
-The official [Ollama Docker image](https://hub.docker.com/r/ollama/ollama) `ollama/ollama` is available on Docker Hub.
-
-> [!NOTE]
-> The Docker integration is disabled by default and can be enabled in the settings.
-
 #### Xclip or Xsel (Linux only)
 - [Xclip](https://github.com/astrand/xclip)
 - [Xsel](http://www.vergenet.net/~conrad/software/xsel/)
@@ -91,6 +87,11 @@ Xclip or Xsel is used to interact with the clipboard on Linux systems. They are 
 | `sudo pacman -S xclip` | `sudo apt install xclip` | `sudo dnf instal xclip` |
 | `sudo pacman -S xsel`  | `sudo apt install xsel`  | `sudo dnf instal xsel`  |
 
+#### Docker (optional)
+The official [Ollama Docker image](https://hub.docker.com/r/ollama/ollama) `ollama/ollama` is available on Docker Hub.
+
+> [!NOTE]
+> The Docker integration is disabled by default and can be enabled in the settings.
 
 ## Building from source
 
@@ -122,8 +123,8 @@ go run .
 
 To develop the project, you need to have the following tools installed on your machine:
 - [Go](https://golang.org/dl/)
-- [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer) (optional, runs from make recipe)
-- [golangci-lint](https://golangci-lint.run/) (optional, runs from make recipe)
+- [Stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer) (runs from make recipe)
+- [golangci-lint](https://golangci-lint.run/) (runs from make recipe)
 
 This project uses the Fyne Toolkit, learn more about the Fyne Toolkit at [fyne.io](https://fyne.io/).
 
