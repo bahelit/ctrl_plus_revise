@@ -84,8 +84,8 @@ Xclip or Xsel is used to interact with the clipboard on Linux systems. They are 
 
 | Arch                   | Ubuntu                   | Fedora                  |
 |------------------------|--------------------------|-------------------------|
-| `sudo pacman -S xclip` | `sudo apt install xclip` | `sudo dnf instal xclip` |
-| `sudo pacman -S xsel`  | `sudo apt install xsel`  | `sudo dnf instal xsel`  |
+| `sudo pacman -S xclip` | `sudo apt install xclip` | `sudo dnf install xclip` |
+| `sudo pacman -S xsel`  | `sudo apt install xsel`  | `sudo dnf install xsel`  |
 
 #### Docker (optional)
 The official [Ollama Docker image](https://hub.docker.com/r/ollama/ollama) `ollama/ollama` is available on Docker Hub.

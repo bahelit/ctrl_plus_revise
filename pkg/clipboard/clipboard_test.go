@@ -14,7 +14,7 @@ import (
 )
 
 func TestCopyAndPaste(t *testing.T) {
-	expected := "日本語"
+	expected := "Hello Clipboard!"
 
 	err := clipboard.WriteAll(expected)
 	if err != nil {
@@ -32,7 +32,7 @@ func TestCopyAndPaste(t *testing.T) {
 }
 
 func TestMultiCopyAndPaste(t *testing.T) {
-	expected1 := "French: éèêëàùœç"
+	expected1 := "French: éèêëàùœç - Japanese: 日本語"
 	expected2 := "Weird UTF-8: 💩☃"
 
 	err := clipboard.WriteAll(expected1)
@@ -69,7 +69,7 @@ func BenchmarkReadAll(b *testing.B) {
 }
 
 func BenchmarkWriteAll(b *testing.B) {
-	text := "いろはにほへと"
+	text := "Hello Clipboard!"
 	for i := 0; i < b.N; i++ {
 		clipboard.WriteAll(text)
 	}

@@ -20,7 +20,7 @@ func ExampleThrottle() {
 	// Create a new throttle variable.
 	th := throttle.NewThrottle(3)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// Gatekeeper. Do not let more than 3 goroutines to start.
 		th.Do()
 

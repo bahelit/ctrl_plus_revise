@@ -30,7 +30,7 @@ func ExampleGetDirInfo() {
 		_ = testABC.Close()
 	}()
 
-	dirInfo, _ := dirSize.GetDirInfo(os.DirFS("."))
+	dirInfo, _ := dirSize.GetDirInfo(os.DirFS(tmpDir))
 
 	fmt.Printf("%d files  size: %1.f\n", dirInfo.FileCount, float64(dirInfo.TotalSize))
 
