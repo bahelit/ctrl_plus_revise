@@ -41,7 +41,10 @@ func LoadingScreenWithMessageAddModel(guiApp fyne.App, title, msg string) fyne.W
 	model := guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(ollama.Llama3Dot2))
 	modelMsg := "\nUsing model: " + ollama.ModelName(model).String() + "..."
 	title += modelMsg
-	loadingScreen := guiApp.NewWindow(title)
+	var loadingScreen fyne.Window
+	fyne.Do(func() {
+		loadingScreen = guiApp.NewWindow(title)
+	})
 	infinite := widget.NewProgressBarInfinite()
 	text := widget.NewLabel(msg)
 	loadingScreen.SetContent(container.NewVBox(text, infinite))
@@ -49,11 +52,16 @@ func LoadingScreenWithMessageAddModel(guiApp fyne.App, title, msg string) fyne.W
 }
 
 func LoadingScreenWithProgressAndMessage(guiApp fyne.App, loading *widget.ProgressBar, status binding.String, title, msg string) fyne.Window {
-	loadingScreen := guiApp.NewWindow(title)
+	var loadingScreen fyne.Window
+	fyne.DoAndWait(func() {
+		loadingScreen = guiApp.NewWindow(title)
+	})
 	loadingScreen.Resize(fyne.NewSize(300, 80))
 	text := widget.NewLabel(msg)
 	s := widget.NewLabelWithData(status)
 	layout := container.NewGridWithColumns(1, text, s, loading)
-	loadingScreen.SetContent(layout)
+	fyne.DoAndWait(func() {
+		loadingScreen.SetContent(layout)
+	})
 	return loadingScreen
 }

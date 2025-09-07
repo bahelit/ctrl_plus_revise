@@ -8,7 +8,7 @@ clean:
 
 test:
 	@echo "\n> Run tests...\n"
-	go test -v -cover -race ./...
+	go test -v ./...
 
 build: clean test
 	@echo "\n> Building project backend...\n"

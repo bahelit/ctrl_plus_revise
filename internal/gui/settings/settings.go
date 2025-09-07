@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -18,6 +17,7 @@ import (
 	"github.com/bahelit/ctrl_plus_revise/internal/docker"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/bindings"
+	"github.com/bahelit/ctrl_plus_revise/internal/gui/loading"
 	"github.com/bahelit/ctrl_plus_revise/internal/gui/shortcuts"
 	"github.com/bahelit/ctrl_plus_revise/internal/ollama"
 )
@@ -146,10 +146,14 @@ func PullModelWrapper(guiApp fyne.App, ollamaClient *ollamaApi.Client, update bo
 
 	model := ollama.GetActiveModel(guiApp)
 	pulling := loading.LoadingScreenWithProgressAndMessage(guiApp, progressBar, status, "Downloading Model", "Retrieving model: "+model.String())
-	pulling.Show()
+	fyne.Do(func() {
+		pulling.Show()
+	})
 	defer func() {
 		time.Sleep(1 * time.Second)
-		pulling.Hide()
+		fyne.DoAndWait(func() {
+			pulling.Hide()
+		})
 	}()
 
 	err := ollama.PullModel(guiApp, ollamaClient, progressFunc, update)

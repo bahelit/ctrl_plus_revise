@@ -100,9 +100,10 @@ func setKeyBoardShortcutKey(guiApp fyne.App, action KeyAction, key KeyType, valu
 //nolint:gocyclo // This function is not too complex
 func keyboardModifierButtonsDropDown(guiApp fyne.App, action KeyAction, key KeyType) *widget.Select {
 	modKeys := modifierKeys()
-	if key == ModifierKey2 {
+	switch key {
+	case ModifierKey2:
 		modKeys = append(modKeys, EmptySelection)
-	} else if key == NormalKey {
+	case NormalKey:
 		modKeys = normalKeys()
 	}
 	combo := widget.NewSelect(

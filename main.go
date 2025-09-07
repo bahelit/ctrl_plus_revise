@@ -58,7 +58,9 @@ func main() {
 		}
 		fetchModel(ollamaClient)
 		time.Sleep(1 * time.Second)
-		startupWindow.Close()
+		fyne.DoAndWait(func() {
+			startupWindow.Close()
+		})
 	}()
 
 	//sayHello()
@@ -68,6 +70,16 @@ func main() {
 	go func() {
 		shortcuts.StartKeyboardListener(guiApp, ollamaClient)
 	}()
+
+	// TODO Single key shortcuts for when the GUI is visible
+	//if deskCanvas, ok := sysTray.Canvas().(desktop.Canvas); ok {
+	//	deskCanvas.SetOnKeyDown(func(key *fyne.KeyEvent) {
+	//		log.Println("Desktop key down", key)
+	//	})
+	//	deskCanvas.SetOnKeyUp(func(key *fyne.KeyEvent) {
+	//		log.Println("Desktop key up", key)
+	//	})
+	//}
 
 	// Handle shutdown signals
 	c := make(chan os.Signal, 1)

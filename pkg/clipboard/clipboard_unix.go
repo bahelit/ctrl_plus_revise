@@ -14,8 +14,13 @@ import (
 )
 
 const (
-	xsel        = "xsel"
-	xclip       = "xclip"
+	// Xorg
+	xsel  = "xsel"
+	xclip = "xclip"
+	// Wayland
+	wlcopy  = "wl-copy"
+	wlpaste = "wl-paste"
+
 	flatpakPath = "/run/host/bin/"
 )
 
@@ -34,6 +39,9 @@ var (
 	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
 	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
 
+	wxPastePasteArgs = []string{wlpaste, "--primary"}
+	wxclipCopyArgs   = []string{wlcopy, "--primary"}
+
 	xclipPasteFlatpakArgs = []string{flatpakPath + xclip, "-out", "-selection", "clipboard"}
 	xclipCopyFlatpakArgs  = []string{flatpakPath + xclip, "-in", "-selection", "clipboard"}
 
@@ -41,11 +49,18 @@ var (
 )
 
 func init() {
-	pasteCmdArgs = xclipPasteArgs
-	copyCmdArgs = xclipCopyArgs
+	pasteCmdArgs = wxPastePasteArgs
+	copyCmdArgs = wxclipCopyArgs
+
+	if _, err := exec.LookPath(wlcopy); err == nil {
+		slog.Info("Using wl-copy and wl-paste")
+		return
+	}
 
 	if _, err := exec.LookPath(xclip); err == nil {
 		slog.Info("Using xclip")
+		pasteCmdArgs = xclipPasteArgs
+		copyCmdArgs = xclipCopyArgs
 		return
 	} else {
 		_, err = exec.LookPath(flatpakPath + xclip)

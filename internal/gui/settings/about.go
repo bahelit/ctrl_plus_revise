@@ -30,9 +30,7 @@ func ShowAbout(guiApp fyne.App) {
 	aboutTitle.Alignment = fyne.TextAlignCenter
 	aboutTitle.TextStyle = fyne.TextStyle{Bold: true}
 	aboutText := widget.NewLabel("Ctrl+Revise is here to help you unleash your inner wordsmith!\n" +
-		"This nifty tool uses clever local AI agents to generate text based from any highlighted text.\n\n" +
-		"Need some professional flair? Got a friendly tone in mind?\nOr maybe you just want to make sure your writing is grammatically correct?\n" +
-		"Simply highlight the text you want to fix or ask about then press keyboard shortcut, and you're good to go!")
+		"This nifty tool uses clever local AI agents to generate text based from any highlighted text.\n")
 
 	aboutWindow := container.NewVBox(
 		aboutTitle,

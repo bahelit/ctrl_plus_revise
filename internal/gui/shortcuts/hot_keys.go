@@ -2,13 +2,13 @@ package shortcuts
 
 import (
 	"crypto/sha256"
-	"fyne.io/fyne/v2"
 	"log/slog"
 	"time"
 
+	"fyne.io/fyne/v2"
+
 	"github.com/go-vgo/robotgo"
 	htgotts "github.com/hegedustibor/htgo-tts"
-	"github.com/ollama/ollama/api"
 	ollamaApi "github.com/ollama/ollama/api"
 	hook "github.com/robotn/gohook"
 
@@ -45,7 +45,6 @@ var (
 )
 
 // RegisterHotkeys registers the hotkeys for the application
-// TODO: Allow users changes the mappings
 func RegisterHotkeys(guiApp fyne.App, ollamaClient *ollamaApi.Client) chan hook.Event {
 	hook.Register(hook.KeyDown, GetAskKeys(), func(e hook.Event) {
 		slog.Debug("AskKey has been pressed", "event", e)
@@ -358,7 +357,7 @@ func copyTextToClipboard() (string, bool) {
 	return clip, true
 }
 
-func handleGeneratedResponse(guiApp fyne.App, ollamaClient *ollamaApi.Client, question string, response *api.GenerateResponse) {
+func handleGeneratedResponse(guiApp fyne.App, ollamaClient *ollamaApi.Client, question string, response *ollamaApi.GenerateResponse) {
 	slog.Debug("LastClipboardContent", "LastClipboardContent", LastClipboardContent)
 
 	LastClipboardContent = sha256.Sum256([]byte(response.Response))
