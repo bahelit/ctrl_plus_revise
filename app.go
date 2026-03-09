@@ -76,7 +76,7 @@ func (a *App) shutdown(ctx context.Context) {
 		a.shortcutMgr.Stop()
 	}
 
-	if a.cfg.StopOllamaOnShutDown && !a.cfg.UseDocker {
+	if a.cfg.StopOllamaOnShutDown {
 		slog.Info("Stopping Ollama")
 		cmd := exec.Command("pkill", "ollama")
 		if err := cmd.Run(); err != nil {
@@ -100,14 +100,13 @@ type AppSettings struct {
 	ShowPopUp              bool     `json:"showPopUp"`
 	ShowStartWindow        bool     `json:"showStartWindow"`
 	CurrentPrompt          int      `json:"currentPrompt"`
-	CurrentChatModel       int      `json:"currentChatModel"`
-	CurrentModel           int      `json:"currentModel"`
+	CurrentChatModel       string   `json:"currentChatModel"`
+	CurrentModel           string   `json:"currentModel"`
 	CurrentFromLang        string   `json:"currentFromLang"`
 	CurrentToLang          string   `json:"currentToLang"`
 	StopOllamaOnShutDown   bool     `json:"stopOllamaOnShutDown"`
 	UseRemoteOllama        bool     `json:"useRemoteOllama"`
 	OllamaURL              string   `json:"ollamaURL"`
-	UseDocker              bool     `json:"useDocker"`
 	AskAIShortcut          []string `json:"askAIShortcut"`
 	CtrlReviseShortcut     []string `json:"ctrlReviseShortcut"`
 	TranslateShortcut      []string `json:"translateShortcut"`
@@ -128,7 +127,6 @@ func (a *App) GetSettings() AppSettings {
 		StopOllamaOnShutDown:   a.cfg.StopOllamaOnShutDown,
 		UseRemoteOllama:        a.cfg.UseRemoteOllama,
 		OllamaURL:              a.cfg.OllamaURL,
-		UseDocker:              a.cfg.UseDocker,
 		AskAIShortcut:          a.cfg.AskAIShortcut,
 		CtrlReviseShortcut:     a.cfg.CtrlReviseShortcut,
 		TranslateShortcut:      a.cfg.TranslateShortcut,
@@ -149,7 +147,6 @@ func (a *App) SaveSettings(settings AppSettings) error {
 	a.cfg.StopOllamaOnShutDown = settings.StopOllamaOnShutDown
 	a.cfg.UseRemoteOllama = settings.UseRemoteOllama
 	a.cfg.OllamaURL = settings.OllamaURL
-	a.cfg.UseDocker = settings.UseDocker
 	a.cfg.AskAIShortcut = settings.AskAIShortcut
 	a.cfg.CtrlReviseShortcut = settings.CtrlReviseShortcut
 	a.cfg.TranslateShortcut = settings.TranslateShortcut
@@ -160,49 +157,55 @@ func (a *App) SaveSettings(settings AppSettings) error {
 // Models
 // ---------------------------------------------------------------------------
 
-// ModelInfo describes a single Ollama model available in the app.
+// recommendedModels lists models suggested to users who haven't installed any.
+var recommendedModels = []string{
+	"llama3.2:latest",
+	"qwen2.5:3b",
+	"gemma3:latest",
+}
+
+// ModelInfo describes a single Ollama model.
 type ModelInfo struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	MemMB int64  `json:"memMB"`
+	Name          string `json:"name"`
+	IsInstalled   bool   `json:"isInstalled"`
+	IsRecommended bool   `json:"isRecommended"`
 }
 
-// GetModels returns all supported models with their metadata.
+// ollamaBaseURL returns the URL of the Ollama server based on current config.
+func (a *App) ollamaBaseURL() string {
+	if a.cfg.UseRemoteOllama && a.cfg.OllamaURL != "" {
+		return a.cfg.OllamaURL
+	}
+	return "http://localhost:11434"
+}
+
+// GetModels queries Ollama for installed models.
 func (a *App) GetModels() []ModelInfo {
-	last := int(ollama.Phi3)
-	models := make([]ModelInfo, 0, last+1)
-	for i := 0; i <= last; i++ {
-		name := ollama.ModelName(i)
-		memBytes := ollama.MemoryUsage[name]
-		models = append(models, ModelInfo{
-			ID:    i,
-			Name:  name.String(),
-			MemMB: int64(memBytes) / (1024 * 1024),
-		})
-	}
-	return models
-}
+	var result []ModelInfo
 
-// GetCurrentModel returns the index of the currently selected model.
-func (a *App) GetCurrentModel() int {
-	return a.cfg.CurrentModel
-}
+	if a.ollamaClient != nil {
+		models, err := ollama.ListModels(context.Background(), a.ollamaBaseURL())
+		if err == nil {
+			for _, m := range models {
+				isRec := false
+				for _, rec := range recommendedModels {
+					if rec == m.Name {
+						isRec = true
+						break
+					}
+				}
+				result = append(result, ModelInfo{
+					Name:          m.Name,
+					IsInstalled:   true,
+					IsRecommended: isRec,
+				})
+			}
+		} else {
+			slog.Error("Failed to list models", "error", err)
+		}
+	}
 
-// PullCurrentModel downloads the currently configured model from Ollama.
-func (a *App) PullCurrentModel() string {
-	if a.ollamaClient == nil {
-		return "Not connected to Ollama"
-	}
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	err := ollama.PullModel(model, a.ollamaClient, func(resp ollamaApi.ProgressResponse) error {
-		slog.Info("Pulling model", "status", resp.Status, "completed", resp.Completed, "total", resp.Total)
-		return nil
-	}, false)
-	if err != nil {
-		slog.Error("Failed to pull model", "error", err)
-		return "Failed to pull model: " + err.Error()
-	}
-	return "Model pulled successfully: " + model.String()
+	return result
 }
 
 // ---------------------------------------------------------------------------
@@ -238,8 +241,7 @@ func (a *App) AskQuestion(question string) string {
 	if a.ollamaClient == nil {
 		return "Not connected to Ollama"
 	}
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAI(model, a.ollamaClient, question)
+	resp, err := ollama.AskAI(a.cfg.CurrentModel, a.ollamaClient, question)
 	if err != nil {
 		slog.Error("AskQuestion failed", "error", err)
 		return "Error: " + err.Error()
@@ -256,9 +258,8 @@ func (a *App) ReviseText(text string, promptID int) string {
 	if a.ollamaClient == nil {
 		return "Not connected to Ollama"
 	}
-	model := ollama.ModelName(a.cfg.CurrentModel)
 	prompt := ollama.PromptMsg(promptID)
-	resp, err := ollama.AskAIWithPromptMsg(model, a.ollamaClient, prompt, text)
+	resp, err := ollama.AskAIWithPromptMsg(a.cfg.CurrentModel, a.ollamaClient, prompt, text)
 	if err != nil {
 		slog.Error("ReviseText failed", "error", err)
 		return "Error: " + err.Error()
@@ -275,8 +276,7 @@ func (a *App) TranslateText(text, fromLang, toLang string) string {
 	if a.ollamaClient == nil {
 		return "Not connected to Ollama"
 	}
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAIToTranslate(model, a.ollamaClient, text, ollama.Language(fromLang), ollama.Language(toLang))
+	resp, err := ollama.AskAIToTranslate(a.cfg.CurrentModel, a.ollamaClient, text, ollama.Language(fromLang), ollama.Language(toLang))
 	if err != nil {
 		slog.Error("TranslateText failed", "error", err)
 		return "Error: " + err.Error()
@@ -355,9 +355,8 @@ func (a *App) SendChatMessage(chatID int64, isNew bool, message string, msgConte
 	if a.ollamaClient == nil {
 		return ChatResponse{Response: "Not connected to Ollama"}
 	}
-	model := ollama.ModelName(a.cfg.CurrentChatModel)
 
-	resp, err := ollama.AskAiWithStringAndContext(model, a.ollamaClient, msgContext, message)
+	resp, err := ollama.AskAiWithStringAndContext(a.cfg.CurrentChatModel, a.ollamaClient, msgContext, message)
 	if err != nil {
 		slog.Error("SendChatMessage failed", "error", err)
 		return ChatResponse{Response: "Error: " + err.Error()}
@@ -370,7 +369,7 @@ func (a *App) SendChatMessage(chatID int64, isNew bool, message string, msgConte
 				title = string([]rune(title)[:14])
 			}
 			entry := &chatModel.Chat{
-				Model:     int(model),
+				Model:     0,
 				Owner:     "default",
 				Title:     title,
 				Questions: []string{message},
@@ -385,7 +384,7 @@ func (a *App) SendChatMessage(chatID int64, isNew bool, message string, msgConte
 		} else {
 			entry := &chatModel.Chat{
 				ID:        &chatID,
-				Model:     int(model),
+				Model:     0,
 				Owner:     "default",
 				Questions: []string{message},
 				Responses: []string{resp.Response},
@@ -454,8 +453,7 @@ func (a *App) GenerateMeal(info MealInfo) string {
 		return "Not connected to Ollama"
 	}
 	prompt := meal.CreateMealPrompt(toMealPkg(info)) + ". format: markdown"
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAI(model, a.ollamaClient, prompt)
+	resp, err := ollama.AskAI(a.cfg.CurrentModel, a.ollamaClient, prompt)
 	if err != nil {
 		slog.Error("GenerateMeal failed", "error", err)
 		return "Error: " + err.Error()
@@ -469,8 +467,7 @@ func (a *App) GenerateMealPrep(info MealInfo) string {
 		return "Not connected to Ollama"
 	}
 	prompt := meal.CreateMealPrepPrompt(toMealPkg(info)) + ". format: markdown"
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAI(model, a.ollamaClient, prompt)
+	resp, err := ollama.AskAI(a.cfg.CurrentModel, a.ollamaClient, prompt)
 	if err != nil {
 		slog.Error("GenerateMealPrep failed", "error", err)
 		return "Error: " + err.Error()
@@ -484,8 +481,7 @@ func (a *App) GenerateGroceryList(info MealInfo) string {
 		return "Not connected to Ollama"
 	}
 	prompt := meal.CreateGroceryListPrompt(toMealPkg(info)) + ". format: markdown"
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAI(model, a.ollamaClient, prompt)
+	resp, err := ollama.AskAI(a.cfg.CurrentModel, a.ollamaClient, prompt)
 	if err != nil {
 		slog.Error("GenerateGroceryList failed", "error", err)
 		return "Error: " + err.Error()
@@ -499,8 +495,7 @@ func (a *App) GenerateBudgetGroceryList(info MealInfo) string {
 		return "Not connected to Ollama"
 	}
 	prompt := meal.CreateBudgetFriendlyGroceryListPrompt(toMealPkg(info)) + ". format: markdown"
-	model := ollama.ModelName(a.cfg.CurrentModel)
-	resp, err := ollama.AskAI(model, a.ollamaClient, prompt)
+	resp, err := ollama.AskAI(a.cfg.CurrentModel, a.ollamaClient, prompt)
 	if err != nil {
 		slog.Error("GenerateBudgetGroceryList failed", "error", err)
 		return "Error: " + err.Error()
@@ -552,16 +547,6 @@ func (a *App) CheckOllama() bool {
 	}
 	a.ollamaClient = client
 	return true
-}
-
-// InstallOllama installs or updates Ollama and returns a status message.
-func (a *App) InstallOllama() string {
-	err := ollama.InstallOrUpdateOllama(a.cfg.UseDocker, a.ollamaClient)
-	if err != nil {
-		slog.Error("InstallOllama failed", "error", err)
-		return "Failed to install Ollama: " + err.Error()
-	}
-	return "Ollama installed successfully"
 }
 
 // TestOllamaURL tests whether a connection to the given URL can be established.

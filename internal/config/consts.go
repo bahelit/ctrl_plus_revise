@@ -14,7 +14,6 @@ const (
 	StopOllamaOnShutDownKey    = "stopOllamaOnShutDown"
 	UseRemoteOllamaKey         = "useRemoteOllama"
 	OllamaURLKey               = "OllamaURL"
-	UseDockerKey               = "useDocker"
 	AskAIKeyboardShortcut      = "AskAIKeyboardShortcut"
 	CtrlReviseKeyboardShortcut = "CtrlReviseKeyboardShortcut"
 	TranslateKeyboardShortcut  = "TranslateKeyboardShortcut"

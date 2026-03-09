@@ -13,14 +13,13 @@ type AppConfig struct {
 	ShowPopUp              bool     `json:"showPopUp"`
 	ShowStartWindow        bool     `json:"showStartWindow"`
 	CurrentPrompt          int      `json:"currentPrompt"`
-	CurrentChatModel       int      `json:"currentChatModel"`
-	CurrentModel           int      `json:"currentModel"`
+	CurrentChatModel       string   `json:"currentChatModel"`
+	CurrentModel           string   `json:"currentModel"`
 	CurrentFromLang        string   `json:"currentFromLang"`
 	CurrentToLang          string   `json:"currentToLang"`
 	StopOllamaOnShutDown   bool     `json:"stopOllamaOnShutDown"`
 	UseRemoteOllama        bool     `json:"useRemoteOllama"`
 	OllamaURL              string   `json:"ollamaURL"`
-	UseDocker              bool     `json:"useDocker"`
 	AskAIShortcut          []string `json:"askAIShortcut"`
 	CtrlReviseShortcut     []string `json:"ctrlReviseShortcut"`
 	TranslateShortcut      []string `json:"translateShortcut"`
@@ -34,14 +33,13 @@ func DefaultConfig() *AppConfig {
 		ShowPopUp:              false,
 		ShowStartWindow:        true,
 		CurrentPrompt:          0,
-		CurrentChatModel:       0,
-		CurrentModel:           0,
+		CurrentChatModel:       "llama3.2:latest",
+		CurrentModel:           "llama3.2:latest",
 		CurrentFromLang:        "English",
 		CurrentToLang:          "Spanish",
 		StopOllamaOnShutDown:   true,
 		UseRemoteOllama:        false,
 		OllamaURL:              "http://localhost:11434",
-		UseDocker:              false,
 		AskAIShortcut:          []string{"alt", "a"},
 		CtrlReviseShortcut:     []string{"alt", "c"},
 		TranslateShortcut:      []string{"alt", "t"},

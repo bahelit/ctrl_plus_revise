@@ -6,14 +6,13 @@ export namespace main {
 	    showPopUp: boolean;
 	    showStartWindow: boolean;
 	    currentPrompt: number;
-	    currentChatModel: number;
-	    currentModel: number;
+	    currentChatModel: string;
+	    currentModel: string;
 	    currentFromLang: string;
 	    currentToLang: string;
 	    stopOllamaOnShutDown: boolean;
 	    useRemoteOllama: boolean;
 	    ollamaURL: string;
-	    useDocker: boolean;
 	    askAIShortcut: string[];
 	    ctrlReviseShortcut: string[];
 	    translateShortcut: string[];
@@ -36,7 +35,6 @@ export namespace main {
 	        this.stopOllamaOnShutDown = source["stopOllamaOnShutDown"];
 	        this.useRemoteOllama = source["useRemoteOllama"];
 	        this.ollamaURL = source["ollamaURL"];
-	        this.useDocker = source["useDocker"];
 	        this.askAIShortcut = source["askAIShortcut"];
 	        this.ctrlReviseShortcut = source["ctrlReviseShortcut"];
 	        this.translateShortcut = source["translateShortcut"];
@@ -111,9 +109,9 @@ export namespace main {
 	    }
 	}
 	export class ModelInfo {
-	    id: number;
 	    name: string;
-	    memMB: number;
+	    isInstalled: boolean;
+	    isRecommended: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ModelInfo(source);
@@ -121,9 +119,9 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
 	        this.name = source["name"];
-	        this.memMB = source["memMB"];
+	        this.isInstalled = source["isInstalled"];
+	        this.isRecommended = source["isRecommended"];
 	    }
 	}
 	export class PromptInfo {

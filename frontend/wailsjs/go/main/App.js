@@ -34,10 +34,6 @@ export function GetChats() {
   return window['go']['main']['App']['GetChats']();
 }
 
-export function GetCurrentModel() {
-  return window['go']['main']['App']['GetCurrentModel']();
-}
-
 export function GetLanguages() {
   return window['go']['main']['App']['GetLanguages']();
 }
@@ -56,14 +52,6 @@ export function GetSettings() {
 
 export function GetShortcuts() {
   return window['go']['main']['App']['GetShortcuts']();
-}
-
-export function InstallOllama() {
-  return window['go']['main']['App']['InstallOllama']();
-}
-
-export function PullCurrentModel() {
-  return window['go']['main']['App']['PullCurrentModel']();
 }
 
 export function ReviseText(arg1, arg2) {

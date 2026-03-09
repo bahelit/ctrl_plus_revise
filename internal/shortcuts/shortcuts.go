@@ -44,7 +44,7 @@ type Manager struct {
 	firstRun       bool
 	systemHook     chan hook.Event
 	selectedPrompt ollama.PromptMsg
-	selectedModel  ollama.ModelName
+	selectedModel  string
 }
 
 // NewManager creates a ready-to-use Manager.  Call Start() in a goroutine to
@@ -58,7 +58,7 @@ func NewManager(cfg *config.AppConfig, client *api.Client, notify NotifyFunc) *M
 		lastKeyPress:   time.Now(),
 		firstRun:       true,
 		selectedPrompt: ollama.CorrectGrammar,
-		selectedModel:  ollama.ModelName(cfg.CurrentModel),
+		selectedModel:  cfg.CurrentModel,
 	}
 	if cfg.SpeakAIResponse {
 		m.speech = &htgotts.Speech{Folder: "audio", Language: "en"}

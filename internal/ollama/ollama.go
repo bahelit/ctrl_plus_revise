@@ -3,59 +3,9 @@ package ollama
 import (
 	"context"
 	"log/slog"
-	"strconv"
 
-	"github.com/bahelit/ctrl_plus_revise/internal/config"
-	"github.com/bahelit/ctrl_plus_revise/pkg/bytesize"
 	"github.com/ollama/ollama/api"
 )
-
-//go:generate stringer -linecomment -type=ModelName
-type ModelName int
-
-const (
-	Llama3Dot2      ModelName = iota // llama3.2:latest
-	CodeLlama                        // codellama:latest
-	CodeLlama13b                     // codellama:13b
-	CodeGemma                        // codegemma:7b
-	DeepSeekCoder                    // deepseek-coder:latest
-	DeepSeekCoderV2                  // deepseek-coder-v2:latest
-	Gemma                            // gemma:latest
-	Gemma2b                          // gemma:2b
-	Gemma2                           // gemma2:latest
-	Gemma22B                         // gemma2:2b
-	LlamaVision                      // llama3.2-vision:latest
-	Llama3Dot1                       // llama3.1:latest
-	Llama3Dot21B                     // llama3.2:1b
-	Llama3                           // llama3:latest
-	Llava                            // llava:latest
-	Mistral                          // mistral:latest
-	MistralNemo                      // mistral-nemo:latest
-	NemoTronMini                     // nemotron-mini:latest
-	Phi3                             // phi3:latest
-)
-
-// MemoryUsage Memory usage in MB
-var MemoryUsage = map[ModelName]bytesize.ByteSize{
-	CodeLlama:       5077 * bytesize.MB,
-	CodeLlama13b:    9055 * bytesize.MB,
-	CodeGemma:       6489 * bytesize.MB,
-	DeepSeekCoder:   1478 * bytesize.MB,
-	DeepSeekCoderV2: 9462 * bytesize.MB,
-	Gemma:           6490 * bytesize.MB,
-	Gemma2b:         2321 * bytesize.MB,
-	Gemma2:          6683 * bytesize.MB,
-	Gemma22B:        2321 * bytesize.MB,
-	LlamaVision:     9980 * bytesize.MB, // TODO - get the actual size
-	Llama3:          4980 * bytesize.MB,
-	Llama3Dot1:      6354 * bytesize.MB,
-	Llama3Dot2:      6354 * bytesize.MB,
-	Llama3Dot21B:    1354 * bytesize.MB, // TODO - get the actual size
-	Mistral:         4615 * bytesize.MB,
-	MistralNemo:     9615 * bytesize.MB, // TODO - get the actual size
-	NemoTronMini:    4615 * bytesize.MB, // TODO - get the actual size
-	Phi3:            3269 * bytesize.MB,
-}
 
 type Language string
 
@@ -158,24 +108,10 @@ func (prompt PromptMsg) PromptExtraToText() string {
 	return text.promptExtra
 }
 
-// GetActiveModel returns the currently configured model from the app config.
-func GetActiveModel(cfg *config.AppConfig) ModelName {
-	return ModelName(cfg.CurrentModel)
-}
-
-func StringToModel(s string) ModelName {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		slog.Error("Unable to convert string to int", "string", s)
-		return Llama3Dot1
-	}
-	return ModelName(i)
-}
-
-func AskAIWithPromptMsg(model ModelName, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithPromptMsg(model string, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  model,
 		Prompt: prompt.PromptToText() + " [ " + inputForPrompt + " ] " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
@@ -197,11 +133,11 @@ func AskAIWithPromptMsg(model ModelName, client *api.Client, prompt PromptMsg, i
 	return response, nil
 }
 
-func AskAiWithPromptAndContext(model ModelName, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
+func AskAiWithPromptAndContext(model string, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  model,
 		Prompt: prompt.PromptToText() + " " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream:  new(bool),
@@ -224,11 +160,11 @@ func AskAiWithPromptAndContext(model ModelName, client *api.Client, msgContext [
 	return response, nil
 }
 
-func AskAiWithStringAndContext(model ModelName, client *api.Client, msgContext []int, prompt string) (api.GenerateResponse, error) {
+func AskAiWithStringAndContext(model string, client *api.Client, msgContext []int, prompt string) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  model.String(),
+		Model:  model,
 		Prompt: prompt,
 		// set streaming to false
 		Stream:  new(bool),
@@ -251,10 +187,10 @@ func AskAiWithStringAndContext(model ModelName, client *api.Client, msgContext [
 	return response, nil
 }
 
-func AskAI(model ModelName, client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAI(model string, client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: model.String(),
+		Model: model,
 		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
@@ -279,10 +215,10 @@ func AskAI(model ModelName, client *api.Client, inputForPrompt string) (api.Gene
 	return response, nil
 }
 
-func AskAIWithContext(model ModelName, client *api.Client, msgContext []int, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithContext(model string, client *api.Client, msgContext []int, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: model.String(),
+		Model: model,
 		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
@@ -308,10 +244,10 @@ func AskAIWithContext(model ModelName, client *api.Client, msgContext []int, inp
 	return response, nil
 }
 
-func AskAIToTranslate(model ModelName, client *api.Client, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
+func AskAIToTranslate(model string, client *api.Client, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: model.String(),
+		Model: model,
 		Prompt: "As a text translator" +
 			"Please provide a translation that accurately conveys the original meaning and tone of the text. \n" +
 			"If you encounter any ambiguities or uncertainties, please indicate this in your response. \n" +
@@ -337,28 +273,4 @@ func AskAIToTranslate(model ModelName, client *api.Client, inputForPrompt string
 	}
 
 	return response, nil
-}
-
-func PullModel(model ModelName, client *api.Client, pf api.PullProgressFunc, update bool) error {
-	ctx := context.Background()
-	req := &api.PullRequest{
-		Model: model.String(),
-	}
-
-	slog.Debug("Pulling model", "model", model.String())
-	found, err := FindModel(ctx, client, model.String())
-	if err != nil {
-		return err
-	}
-	if found && !update {
-		slog.Info("AI model loaded", "model", model)
-		return nil
-	}
-	err = client.Pull(ctx, req, pf)
-	if err != nil {
-		slog.Error("Failed to pull model", "error", err)
-		return err
-	}
-
-	return nil
 }

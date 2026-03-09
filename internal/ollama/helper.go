@@ -2,22 +2,56 @@ package ollama
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
-
-	ollama "github.com/ollama/ollama/api"
+	"net/http"
+	"strings"
 )
 
-func FindModel(ctx context.Context, client *ollama.Client, model string) (bool, error) {
-	response, err := client.List(ctx)
+// modelEntry is a minimal model descriptor used when parsing /api/tags.
+// It intentionally uses a string for modified_at to avoid time-parse failures
+// when the Ollama server returns an empty value for that field.
+type modelEntry struct {
+	Name string `json:"name"`
+}
+
+type tagsResponse struct {
+	Models []modelEntry `json:"models"`
+}
+
+// ListModels returns the names of all models installed in Ollama.
+// It calls /api/tags directly to avoid a time-parsing bug in the upstream
+// client library when modified_at is empty.
+func ListModels(ctx context.Context, baseURL string) ([]modelEntry, error) {
+	url := strings.TrimRight(baseURL, "/") + "/api/tags"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		slog.Error("Failed to pull model", "error", err)
+		return nil, fmt.Errorf("building request: %w", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		slog.Error("Failed to list models", "error", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result tagsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		slog.Error("Failed to decode model list", "error", err)
+		return nil, err
+	}
+	return result.Models, nil
+}
+
+// FindModel reports whether the named model is installed in Ollama.
+func FindModel(ctx context.Context, baseURL, model string) (bool, error) {
+	models, err := ListModels(ctx, baseURL)
+	if err != nil {
 		return false, err
 	}
-	for m := range response.Models {
-		slog.Debug("Docker Image", "Name", response.Models[m], "Model", response.Models[m].Model,
-			"ParameterSize", response.Models[m].Details.ParameterSize, "Families", response.Models[m].Details.Families)
-		if response.Models[m].Name == model {
-			slog.Debug("Model found", "model", response.Models[m].Model)
+	for _, m := range models {
+		if m.Name == model {
 			return true, nil
 		}
 	}

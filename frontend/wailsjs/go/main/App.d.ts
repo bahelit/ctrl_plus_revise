@@ -18,8 +18,6 @@ export function GenerateMealPrep(arg1:main.MealInfo):Promise<string>;
 
 export function GetChats():Promise<Array<main.ChatInfo>>;
 
-export function GetCurrentModel():Promise<number>;
-
 export function GetLanguages():Promise<Array<string>>;
 
 export function GetModels():Promise<Array<main.ModelInfo>>;
@@ -29,10 +27,6 @@ export function GetPrompts():Promise<Array<main.PromptInfo>>;
 export function GetSettings():Promise<main.AppSettings>;
 
 export function GetShortcuts():Promise<main.ShortcutsConfig>;
-
-export function InstallOllama():Promise<string>;
-
-export function PullCurrentModel():Promise<string>;
 
 export function ReviseText(arg1:string,arg2:number):Promise<string>;
 

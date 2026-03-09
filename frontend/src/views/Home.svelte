@@ -31,10 +31,10 @@
   loadInfo();
 
   const features = [
-    { id: 'ask',       label: 'Ask a Question',  desc: 'Get an AI answer to any question', icon: '❓' },
-    { id: 'chat',      label: 'Chat with AI',    desc: 'Multi-turn conversation with history', icon: '💬' },
-    { id: 'translate', label: 'Translate Text',  desc: 'Translate between 11 languages', icon: '🌐' },
-    { id: 'meal',      label: 'Meal Planner',    desc: 'AI-powered recipes and grocery lists', icon: '🍽️' },
+    { id: 'ask',       label: 'Ask a Question',  desc: 'Get an AI answer to any question',       icon: '❓' },
+    { id: 'chat',      label: 'Chat with AI',    desc: 'Multi-turn conversation with history',    icon: '💬' },
+    { id: 'translate', label: 'Translate Text',  desc: 'Translate between 11 languages',          icon: '🌐' },
+    { id: 'meal',      label: 'Meal Planner',    desc: 'AI-powered recipes and grocery lists',    icon: '🍽️' },
   ];
 </script>
 
@@ -65,7 +65,7 @@
     {/each}
   </section>
 
-  <section class="hotkeys">
+  <section class="hotkeys-card">
     <h2>Global Keyboard Shortcuts</h2>
     <p class="hint">These hotkeys work system-wide while the app is running.</p>
     <table>
@@ -75,38 +75,58 @@
       <tr><td>Cycle through prompt options</td><td><kbd>Alt + P</kbd></td></tr>
       <tr><td>Read highlighted text aloud</td><td><kbd>Alt + R</kbd></td></tr>
     </table>
-    <p class="hint" style="margin-top:8px">The window can be minimised; hotkeys keep working in the background.</p>
+    <p class="hint" style="margin-top: 8px">The window can be minimised; hotkeys keep working in the background.</p>
   </section>
 </div>
 
 <style>
   .home {
-    padding: 24px 32px;
+    padding: 24px 28px 32px;
     overflow-y: auto;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  header { margin-bottom: 24px; }
+  header { display: flex; flex-direction: column; gap: 6px; }
 
-  h1 { font-size: 22px; color: #7cb9e8; margin-bottom: 4px; }
-  .subtitle { color: #aaa; font-size: 13px; margin-bottom: 12px; }
+  h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: var(--logo-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
 
   .status {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
     font-size: 12px;
-    background: #333;
-    color: #aaa;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: fit-content;
   }
-  .status.ok  { background: #1a3a1a; color: #6dbf6d; }
-  .status.err { background: #3a1a1a; color: #e07070; }
 
+  .status.ok  { background: var(--success-bg); color: var(--success-text); border-color: var(--success-text); }
+  .status.err { background: var(--error-bg);   color: var(--error-text);   border-color: var(--error-text);   }
+
+  /* ── Feature cards ── */
   .features {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 10px;
   }
 
   .feature-card {
@@ -114,41 +134,83 @@
     align-items: center;
     gap: 14px;
     padding: 16px;
-    background: #252526;
-    border: 1px solid #333;
-    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
     cursor: pointer;
     text-align: left;
-    color: #e0e0e0;
-    transition: border-color 0.15s, background 0.15s;
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--card-shadow);
   }
 
   .feature-card:hover {
-    border-color: #7cb9e8;
-    background: #2a2a2a;
+    border-color: var(--accent);
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow), 0 0 16px var(--accent-glow);
   }
 
-  .fi { font-size: 28px; }
-  .feature-card strong { display: block; font-size: 14px; margin-bottom: 2px; }
-  .feature-card p { font-size: 12px; color: #aaa; }
+  .fi { font-size: 28px; line-height: 1; }
 
-  .hotkeys { background: #252526; border: 1px solid #333; border-radius: 8px; padding: 16px; }
-  h2 { font-size: 14px; color: #aaa; margin-bottom: 8px; }
-  .hint { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .feature-card strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: var(--text);
+  }
+
+  .feature-card p {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── Hotkeys ── */
+  .hotkeys-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--card-shadow);
+  }
+
+  h2 {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  tr td { padding: 5px 8px; border-bottom: 1px solid #2d2d2d; }
+
+  tr td {
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
   tr:last-child td { border-bottom: none; }
-  td:first-child { color: #ccc; }
-  td:last-child { text-align: right; }
+  td:first-child { color: var(--text-muted); }
+  td:last-child  { text-align: right; }
 
   kbd {
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 3px;
-    padding: 2px 6px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
     font-size: 11px;
     font-family: monospace;
-    color: #ddd;
+    color: var(--accent);
+    letter-spacing: 0.02em;
   }
 </style>
