@@ -2,7 +2,6 @@ package ollama
 
 import (
 	"context"
-	"fyne.io/fyne/v2"
 	"log/slog"
 	"strconv"
 
@@ -159,8 +158,9 @@ func (prompt PromptMsg) PromptExtraToText() string {
 	return text.promptExtra
 }
 
-func GetActiveModel(guiApp fyne.App) ModelName {
-	return ModelName(guiApp.Preferences().IntWithFallback(config.CurrentModelKey, int(Llama3Dot2)))
+// GetActiveModel returns the currently configured model from the app config.
+func GetActiveModel(cfg *config.AppConfig) ModelName {
+	return ModelName(cfg.CurrentModel)
 }
 
 func StringToModel(s string) ModelName {
@@ -172,10 +172,10 @@ func StringToModel(s string) ModelName {
 	return ModelName(i)
 }
 
-func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithPromptMsg(model ModelName, client *api.Client, prompt PromptMsg, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  GetActiveModel(guiApp).String(),
+		Model:  model.String(),
 		Prompt: prompt.PromptToText() + " [ " + inputForPrompt + " ] " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream: new(bool),
@@ -184,8 +184,6 @@ func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, i
 	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -199,11 +197,11 @@ func AskAIWithPromptMsg(guiApp fyne.App, client *api.Client, prompt PromptMsg, i
 	return response, nil
 }
 
-func AskAiWithPromptAndContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
+func AskAiWithPromptAndContext(model ModelName, client *api.Client, msgContext []int, prompt PromptMsg) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  GetActiveModel(guiApp).String(),
+		Model:  model.String(),
 		Prompt: prompt.PromptToText() + " " + prompt.PromptExtraToText(),
 		// set streaming to false
 		Stream:  new(bool),
@@ -213,8 +211,6 @@ func AskAiWithPromptAndContext(guiApp fyne.App, client *api.Client, msgContext [
 	// TODO implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -228,11 +224,11 @@ func AskAiWithPromptAndContext(guiApp fyne.App, client *api.Client, msgContext [
 	return response, nil
 }
 
-func AskAiWithStringAndContext(guiApp fyne.App, client *api.Client, msgContext []int, prompt string) (api.GenerateResponse, error) {
+func AskAiWithStringAndContext(model ModelName, client *api.Client, msgContext []int, prompt string) (api.GenerateResponse, error) {
 	// TODO How long does the context last?
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model:  GetActiveModel(guiApp).String(),
+		Model:  model.String(),
 		Prompt: prompt,
 		// set streaming to false
 		Stream:  new(bool),
@@ -242,8 +238,6 @@ func AskAiWithStringAndContext(guiApp fyne.App, client *api.Client, msgContext [
 	// TODO implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -257,10 +251,10 @@ func AskAiWithStringAndContext(guiApp fyne.App, client *api.Client, msgContext [
 	return response, nil
 }
 
-func AskAI(guiApp fyne.App, client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAI(model ModelName, client *api.Client, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: GetActiveModel(guiApp).String(),
+		Model: model.String(),
 		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
@@ -272,8 +266,6 @@ func AskAI(guiApp fyne.App, client *api.Client, inputForPrompt string) (api.Gene
 	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -287,10 +279,10 @@ func AskAI(guiApp fyne.App, client *api.Client, inputForPrompt string) (api.Gene
 	return response, nil
 }
 
-func AskAIWithContext(guiApp fyne.App, client *api.Client, msgContext []int, inputForPrompt string) (api.GenerateResponse, error) {
+func AskAIWithContext(model ModelName, client *api.Client, msgContext []int, inputForPrompt string) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: GetActiveModel(guiApp).String(),
+		Model: model.String(),
 		Prompt: "IDENTITY\nYou are a universal AI that yields the best possible result given the input.\n\nGOAL\nFully digest the input.\n\nDeeply contemplate the input and what it means and what the sender likely wanted you to do with it.\n\nOUTPUT\nOutput the best possible output based on your understanding of what was likely wanted. INPUT: " + //nolint:lll // AI Prompt
 			inputForPrompt +
 			"If you are unsure or lack sufficient knowledge to provide a meaningful response, explicitly state \"I don't know\"." +
@@ -303,8 +295,6 @@ func AskAIWithContext(guiApp fyne.App, client *api.Client, msgContext []int, inp
 	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -318,10 +308,10 @@ func AskAIWithContext(guiApp fyne.App, client *api.Client, msgContext []int, inp
 	return response, nil
 }
 
-func AskAIToTranslate(guiApp fyne.App, client *api.Client, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
+func AskAIToTranslate(model ModelName, client *api.Client, inputForPrompt string, fromLang, toLang Language) (api.GenerateResponse, error) {
 	var response api.GenerateResponse
 	req := &api.GenerateRequest{
-		Model: GetActiveModel(guiApp).String(),
+		Model: model.String(),
 		Prompt: "As a text translator" +
 			"Please provide a translation that accurately conveys the original meaning and tone of the text. \n" +
 			"If you encounter any ambiguities or uncertainties, please indicate this in your response. \n" +
@@ -336,8 +326,6 @@ func AskAIToTranslate(guiApp fyne.App, client *api.Client, inputForPrompt string
 	// TODO: implement timeout
 	ctx := context.Background()
 	respFunc := func(resp api.GenerateResponse) error {
-		// Only print the response here; GenerateResponse has a number of other
-		// interesting fields you want to examine.
 		response = resp
 		return nil
 	}
@@ -351,9 +339,8 @@ func AskAIToTranslate(guiApp fyne.App, client *api.Client, inputForPrompt string
 	return response, nil
 }
 
-func PullModel(guiApp fyne.App, client *api.Client, pf api.PullProgressFunc, update bool) error {
+func PullModel(model ModelName, client *api.Client, pf api.PullProgressFunc, update bool) error {
 	ctx := context.Background()
-	model := GetActiveModel(guiApp)
 	req := &api.PullRequest{
 		Model: model.String(),
 	}

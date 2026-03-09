@@ -1,8 +1,0 @@
-Website = "https://ctrlplusrevise.com"
-
-[Details]
-  Icon = "images/icon.png"
-  Name = "Ctrl+Revise"
-  ID = "com.ctrlplusrevise.app"
-  Version = "0.1.0"
-  Build = 13

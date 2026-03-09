@@ -34,8 +34,3 @@ func ConnectToOllamaWithURL(rawURL string) *ollama.Client {
 func startUpOllamaNative() {
 	// TODO: Implement this
 }
-
-func InstallOrUpdateOllama() {
-	slog.Info("Installing Ollama")
-
-}
