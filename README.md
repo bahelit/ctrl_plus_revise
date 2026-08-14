@@ -1,3 +1,5 @@
+
+
 <div align="center">
   <p>
       <a href="https://github.com/bahelit/images/icon.png">
@@ -60,7 +62,7 @@ brew install ollama
 
 
 ##### Ubuntu Linux
-Ubuntu users can install Ollama as a [Snap pacakge](https://snapcraft.io/ollama).
+Ubuntu users can install Ollama as a [Snap package](https://snapcraft.io/ollama).
 `sudo snap install ollama`
 
 ##### Arch Linux
